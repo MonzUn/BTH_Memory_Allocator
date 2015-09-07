@@ -1,5 +1,5 @@
 #include "FrameAllocator.h"
-#include <string>
+#include <new>
 
 #define TEST_FRAME_ALLOCATOR 1
 
