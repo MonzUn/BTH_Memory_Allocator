@@ -1,6 +1,7 @@
 # Recursivly add source files in the subfolders selected
 file(GLOB_RECURSE SOURCES
-"main.cpp"
+"*.cpp"
+"*.h"
 )
 
 # Generate source groups depending on folders (creates Visual Studio filters)
