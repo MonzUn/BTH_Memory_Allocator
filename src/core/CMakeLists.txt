@@ -29,7 +29,7 @@ SET(CMAKE_INSTALL_RPATH
 SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH FALSE)
 
 # Make executable from main.cpp and sources listed above
-add_executable(${CMAKE_PROJECT_NAME} Main.cpp ${SOURCES})
+add_executable(${CMAKE_PROJECT_NAME} ${SOURCES})
 
 install(TARGETS ${CMAKE_PROJECT_NAME} RUNTIME DESTINATION bin/${OperatingSystemNameLowerCase}/${TargetArchitecture})
 install(DIRECTORY ${ProjectRoot}shader DESTINATION .)
