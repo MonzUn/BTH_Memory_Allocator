@@ -1,5 +1,5 @@
 #pragma once
-#include <stdlib.h>
+#include <cstdlib>
 #include <cassert>
 
 // Nicer name when dealing with char as byte
@@ -43,7 +43,6 @@ namespace FrameAllocator
 	void Reset()
 	{
 		walker = memory;
-		// TODODB: Mayhaps call destructors of allocated objects here? (Should a frame allocator even do this? O.o)
 	}
 
 	template<typename T>
