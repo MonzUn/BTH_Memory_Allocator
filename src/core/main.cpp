@@ -1,5 +1,7 @@
 #include "FrameAllocator.h"
 #include <new>
+#include <iostream>
+#include <string>
 
 #define TEST_FRAME_ALLOCATOR 1
 
@@ -11,28 +13,40 @@ struct DebugStruct
 	int		NumberOfLegs;
 };
 
-int main() 
-{
-#if TEST_FRAME_ALLOCATOR == 1
+void DanielsTest() {
 	FrameAllocator::Initialize();
 
 	unsigned int framesToRun = 128;
 	do
 	{
-		for ( unsigned int i = 0; i < 100000; ++i )
+		for (unsigned int i = 0; i < 100000; ++i)
 		{
-			Byte*			memoryPointer	= static_cast<Byte*>( fMalloc( 100 ) );
-			DebugStruct*	structPointer	= fNew( DebugStruct, true, 5 );
+			Byte*			memoryPointer = static_cast<Byte*>(fMalloc(100));
+			DebugStruct*	structPointer = fNew(DebugStruct, true, 5);
 
-			fFree( memoryPointer );
-			fDelete( structPointer );
+			fFree(memoryPointer);
+			fDelete(structPointer);
 		}
 
 		FrameAllocator::Reset();
 		--framesToRun;
-	} while ( framesToRun > 0 );
+	} while (framesToRun > 0);
 
 	FrameAllocator::Shutdown();
-#endif
+}
+
+
+int main() 
+{
+	bool quit = false;
+	while (!quit)
+	{
+		std::string input;
+		std::cin >> input;
+
+		if (input == "daniel")
+			DanielsTest();
+
+	}
     return 0;
 }
