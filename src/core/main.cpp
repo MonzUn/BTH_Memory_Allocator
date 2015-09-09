@@ -70,7 +70,7 @@ void testPoolAllocator()
 	std::cout << "Allocation test WITHOUT pool allocator: " << duration << " ms" << std::endl;
 
 	start = std::chrono::high_resolution_clock::now();
-	PoolAllocator* poolAllocator = new PoolAllocator(32, ALLOCATIONS);
+	PoolAllocator* poolAllocator = new PoolAllocator(sizeof(DebugStruct), ALLOCATIONS);
 	for (size_t i = 0; i < ALLOCATIONS; ++i)
 	{
 		debugStructArray[i] = new(poolAllocator->Allocate<DebugStruct>()) DebugStruct(true, 5);
