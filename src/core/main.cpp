@@ -1,5 +1,6 @@
 #include "FrameAllocator.h"
 #include "PoolAllocator.h"
+#include "Logger.h"
 #include <new>
 #include <iostream>
 #include <string>
@@ -19,6 +20,8 @@ struct DebugStruct
 
 void testFrameAllocator();
 void testPoolAllocator();
+
+Logger logOut;
 
 int main()
 {
@@ -83,8 +86,8 @@ void testPoolAllocator()
 		delete debugStructArray[i];
 	}
 	end = std::chrono::high_resolution_clock::now();
-	duration = std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count();
-	std::cout << "Allocation test WITHOUT pool allocator: " << duration << " ms" << std::endl;
+	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	logOut << "Allocation test WITHOUT pool allocator: " << duration << " ms\n";
 
 	start = std::chrono::high_resolution_clock::now();
 	PoolAllocator* poolAllocator = new PoolAllocator(sizeof(DebugStruct), ALLOCATIONS);
@@ -98,6 +101,6 @@ void testPoolAllocator()
 	}
 	delete poolAllocator;
 	end = std::chrono::high_resolution_clock::now();
-	duration = std::chrono::duration_cast< std::chrono::milliseconds >(end - start).count();
-	std::cout << "Allocation test WITH pool allocator: " << duration << " ms" << std::endl;
+	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	logOut << "Allocation test WITH pool allocator: " << duration << " ms\n";
 }
