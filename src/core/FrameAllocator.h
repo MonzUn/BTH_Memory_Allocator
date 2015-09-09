@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdlib>
 #include <cassert>
+#include <cstring>
 
 // Nicer name when dealing with char as byte
 typedef char Byte;
@@ -11,20 +12,24 @@ static_assert( sizeof( Byte ) == 1, "Sizeof Byte must be 1" );
 #ifndef DISABLE_FRAME_ALLOCATOR
 #define fMalloc( count ) FrameAllocator::Allocate<Byte>( count )
 #define fNew( type, ... ) new( FrameAllocator::Allocate<type>( 1 ) ) type( __VA_ARGS__ )
+#define fNewArray( type, count ) FrameAllocator::Create<type>( count )
 #define fFree( pointer )
-#define fDelete( pointer ) // TODODB: Maybe we can just call the destructor here to be nice? :3
+#define fDelete( pointer ) FrameAllocator::Destroy( pointer )
+#define fDeleteArray( pointer ) FrameAllocator::Destroy ( pointer )
 #else
 #define fMalloc( count ) malloc( count )
 #define fNew( type, ... ) new type( __VA_ARGS__ )
+#define fNewArray( type, count ) new type[count]
 #define fFree( pointer ) free( pointer )
-#define fDelete( pointer ) delete( pointer )
+#define fDelete( pointer ) delete pointer
+#define fDeleteArray( pointer ) delete[] pointer
 #endif
 
 #define FRAME_ALLOCATOR_DEBUG 1
 #define BUFFER_SIZE_BYTES_MEGA 16
 #define BUFFER_SIZE_BYTES BUFFER_SIZE_BYTES_MEGA * 1024ULL * 1024ULL
 
-namespace FrameAllocator 
+namespace FrameAllocator
 {
 	static Byte* memory = nullptr;
 	static Byte* walker = nullptr;
@@ -52,12 +57,41 @@ namespace FrameAllocator
 		// Ensure that we don't run out of memory
 		assert( walker + sizeof( T ) < memory + BUFFER_SIZE_BYTES );
 #endif
-		Byte* returnPos = walker;
+		memcpy( walker, &count, sizeof( size_t ) );
 
-		size_t size = count * sizeof( T );
+		Byte* returnPos = walker + sizeof( size_t );
+
+		size_t size = count * sizeof( T ) + sizeof( size_t );
 		size += ( size & 0xF ) ? 16 - ( size & 0xF ) : 0; // 16-byte alignment
 		walker += size;
 
 		return reinterpret_cast<T*>( returnPos );
+	}
+
+	template<typename T>
+	T* Create( size_t count )
+	{
+		T* pointer = Allocate<T>( count );
+		for ( size_t i = 0; i < count; ++i )
+		{
+			new( &pointer[i] ) T();
+		}
+
+		return pointer;
+	}
+
+	template<typename T>
+	void Destroy( T*& pointer )
+	{
+		size_t count = 0;
+		memcpy( &count, reinterpret_cast<Byte*>( pointer ) - sizeof( size_t ), sizeof( size_t ) );
+
+		if ( pointer != nullptr )
+		{
+			for ( size_t i = 0; i < count; ++i )
+			{
+				pointer[i].~T();
+			}
+		}
 	}
 }

@@ -7,7 +7,11 @@
 
 struct DebugStruct
 {
+	DebugStruct() {};
 	DebugStruct( bool alpaca, int numberOfLegs ) : Alpaca( alpaca ), NumberOfLegs( numberOfLegs ) {};
+	~DebugStruct() {
+		int i = 0;
+	}
 
 	bool	Alpaca;
 	int		NumberOfLegs;
@@ -16,7 +20,7 @@ struct DebugStruct
 void testFrameAllocator();
 void testPoolAllocator();
 
-int main() 
+int main()
 {
 	bool quit = false;
 	while (!quit)
@@ -40,16 +44,18 @@ int main()
 void testFrameAllocator() {
 	FrameAllocator::Initialize();
 
-	unsigned int framesToRun = 128;
+	unsigned int framesToRun = 64;
 	do
 	{
 		for (unsigned int i = 0; i < 100000; ++i)
 		{
-			Byte*			memoryPointer = static_cast<Byte*>(fMalloc(100));
-			DebugStruct*	structPointer = fNew(DebugStruct, true, 5);
+			Byte*			memoryPointer		= static_cast<Byte*>( fMalloc( 100 ) );
+			DebugStruct*	structPointer		= fNew( DebugStruct, true, 5 );
+			DebugStruct*	structArrayPointer	= fNewArray( DebugStruct, 3 );
 
-			fFree(memoryPointer);
-			fDelete(structPointer);
+			fFree( memoryPointer );
+			fDelete( structPointer );
+			fDeleteArray( structArrayPointer );
 		}
 
 		FrameAllocator::Reset();
