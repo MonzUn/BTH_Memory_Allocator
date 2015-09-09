@@ -5,9 +5,6 @@
 #include <string>
 #include <chrono>
 
-#define TEST_FRAME_ALLOCATOR 1
-#define TEST_POOL_ALLOCATOR 1
-
 struct DebugStruct
 {
 	DebugStruct( bool alpaca, int numberOfLegs ) : Alpaca( alpaca ), NumberOfLegs( numberOfLegs ) {};
