@@ -41,8 +41,11 @@ int main()
 	bool quit = false;
 	while (!quit)
 	{
+		std::cout << "> ";
 		std::string input;
 		std::cin >> input;
+		if (input == "quit")
+			quit = true;
 
 		if (input == "daniel")
 			DanielsTest();
