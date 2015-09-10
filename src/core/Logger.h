@@ -1,12 +1,8 @@
-#ifndef LOGGER_H
-#define LOGGER_H
-
+#pragma once
 #include <fstream>
 #include <iostream>
 #include <string>
 #include <chrono>
-#include <sstream>
-#include <stdexcept>
 
 class Logger
 {
@@ -14,37 +10,37 @@ public:
 
 	template<typename T>
 	Logger& operator << (T&& x) {
-		if (loggToFile)
-			loggFile << x;
-		if (loggToConsole)
+		if (m_LogToFile)
+			m_LogFile << x;
+		if (m_LogToConsole)
 			std::cout << x;
 		return *this;
 	};
 
 	Logger()
 	{
-		loggToFile = true;
-		loggToConsole = true;
+		m_LogToFile = true;
+		m_LogToConsole = true;
 
-		loggFile = std::ofstream(get_date() + ".txt");
+		m_LogFile = std::ofstream(get_date() + ".txt");
 
-		if (!loggFile.is_open())
+		if (!m_LogFile.is_open())
 		{
 			std::cout << "failed to open logg file.";
-			loggToFile = false;
+			m_LogToFile = false;
 		}
 	}
 
 	~Logger()
 	{
-		loggFile.close();
+		m_LogFile.close();
 	}
 
 	void print(std::streambuf* text)
 	{
-		if (loggToFile)
-			loggFile << text;
-		if (loggToConsole)
+		if (m_LogToFile)
+			m_LogFile << text;
+		if (m_LogToConsole)
 			std::cout << text;
 	}
 
@@ -59,10 +55,8 @@ public:
 	}
 
 private:
-	std::ofstream loggFile;
+	std::ofstream	m_LogFile;
 
-	bool loggToFile;
-	bool loggToConsole;
+	bool			m_LogToFile;
+	bool			m_LogToConsole;
 };
-
-#endif

@@ -1,29 +1,23 @@
+#include <new>
+#include <chrono>
+#include "MemoryAllocator.h"
 #include "FrameAllocator.h"
 #include "PoolAllocator.h"
 #include "Logger.h"
-#include "MemoryAllocator.h"
-#include <new>
-#include <iostream>
-#include <string>
-#include <chrono>
-
 
 struct DebugStruct
 {
 	DebugStruct() {};
 	DebugStruct( bool alpaca, int numberOfLegs ) : Alpaca( alpaca ), NumberOfLegs( numberOfLegs ) {};
-	~DebugStruct() {
-		int i = 0;
-	}
 
 	bool	Alpaca;
 	int		NumberOfLegs;
 };
 
-void testFrameAllocator();
-void testPoolAllocator();
+void TestFrameAllocator();
+void TestPoolAllocator();
 
-Logger logOut;
+Logger LogOut;
 
 int main()
 {
@@ -34,25 +28,26 @@ int main()
 		std::string input;
 		std::cin >> input;
 
-		if (input == "quit")
+		if ( input == "quit" )
 			quit = true;
 
-		if (input == "frameTest")
-			testFrameAllocator();
+		if ( input == "frameTest" )
+			TestFrameAllocator();
 
-		if (input == "poolTest")
-			testPoolAllocator();
+		if ( input == "poolTest" )
+			TestPoolAllocator();
 	}
     return 0;
 }
 
-void testFrameAllocator() {
+void TestFrameAllocator() {
 	MemoryAllocator::GetFrameAllocator()->Initialize( 32ULL * MEBI, 16ULL );
 
-	unsigned int framesToRun = 64;
-	do
+	const unsigned int framesToRun			= 64;
+	const unsigned int iterationsPerFrame	= 100000;
+	for ( unsigned int i = 0; i < framesToRun; ++i )
 	{
-		for (unsigned int i = 0; i < 100000; ++i)
+		for ( unsigned int j = 0; j < iterationsPerFrame; ++j )
 		{
 			Byte*			memoryPointer		= static_cast<Byte*>( fMalloc( 100 ) );
 			DebugStruct*	structPointer		= fNew( DebugStruct, true, 5 );
@@ -62,15 +57,13 @@ void testFrameAllocator() {
 			fDelete( structPointer );
 			fDeleteArray( structArrayPointer );
 		}
-
 		MemoryAllocator::GetFrameAllocator()->Reset();
-		--framesToRun;
-	} while (framesToRun > 0);
+	}
 
 	MemoryAllocator::GetFrameAllocator()->Shutdown();
 }
 
-void testPoolAllocator()
+void TestPoolAllocator()
 {
 	const unsigned int ALLOCATIONS = 100000;
 
@@ -89,7 +82,7 @@ void testPoolAllocator()
 	}
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	logOut << "Allocation test WITHOUT pool allocator: " << duration << " ms\n";
+	LogOut << "Allocation test WITHOUT pool allocator: " << duration << " ms\n";
 
 	start = std::chrono::high_resolution_clock::now();
 	PoolAllocator* poolAllocator = new PoolAllocator(sizeof(DebugStruct), ALLOCATIONS);
@@ -104,5 +97,5 @@ void testPoolAllocator()
 	delete poolAllocator;
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	logOut << "Allocation test WITH pool allocator: " << duration << " ms\n";
+	LogOut << "Allocation test WITH pool allocator: " << duration << " ms\n";
 }
