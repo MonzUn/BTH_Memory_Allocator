@@ -2,96 +2,86 @@
 #include <cstdlib>
 #include <cassert>
 #include <cstring>
-
-// Nicer name when dealing with char as byte
-typedef char Byte;
-static_assert( sizeof( Byte ) == 1, "Sizeof Byte must be 1" );
-
-//#define DISABLE_FRAME_ALLOCATOR
-
-#ifndef DISABLE_FRAME_ALLOCATOR
-#define fMalloc( count ) FrameAllocator::Allocate<Byte>( count )
-#define fNew( type, ... ) new( FrameAllocator::Allocate<type>( 1 ) ) type( __VA_ARGS__ )
-#define fNewArray( type, count ) FrameAllocator::Create<type>( count )
-#define fFree( pointer )
-#define fDelete( pointer ) FrameAllocator::Destroy( pointer )
-#define fDeleteArray( pointer ) FrameAllocator::Destroy ( pointer )
-#else
-#define fMalloc( count ) malloc( count )
-#define fNew( type, ... ) new type( __VA_ARGS__ )
-#define fNewArray( type, count ) new type[count]
-#define fFree( pointer ) free( pointer )
-#define fDelete( pointer ) delete pointer
-#define fDeleteArray( pointer ) delete[] pointer
-#endif
+#include "AllocatorUtility.h"
+#include "Logger.h"
 
 #define FRAME_ALLOCATOR_DEBUG 1
-#define BUFFER_SIZE_BYTES_MEGA 16
-#define BUFFER_SIZE_BYTES BUFFER_SIZE_BYTES_MEGA * 1024ULL * 1024ULL
 
-namespace FrameAllocator
+class FrameAllocator
 {
-	static Byte* memory = nullptr;
-	static Byte* walker = nullptr;
-
-	void Initialize()
+public:
+	void Initialize(size_t memoryByteSize = 16 * MEBI, size_t alignment = 16)
 	{
-		memory = static_cast<Byte*>( malloc( BUFFER_SIZE_BYTES ) );
-		walker = memory;
+		// Make sure that the memory size and the alignment is a power of 2
+		assert((memoryByteSize != 0) && ((memoryByteSize & (~memoryByteSize + 1)) == memoryByteSize));
+		assert((alignment != 0) && ((alignment & (~alignment + 1)) == alignment));
+
+		m_MemoryByteSize = memoryByteSize;
+		m_Alignment = alignment;
+
+		m_Memory = static_cast<Byte*>(malloc(memoryByteSize));
+		m_Walker = m_Memory;
 	}
 
 	void Shutdown()
 	{
-		free( memory );
+		free(m_Memory);
 	}
 
 	void Reset()
 	{
-		walker = memory;
+		m_Walker = m_Memory;
 	}
 
 	template<typename T>
-	T* Allocate( size_t count = 1ULL)
+	T* Allocate(size_t count = 1ULL)
 	{
 #if FRAME_ALLOCATOR_DEBUG == 1
 		// Ensure that we don't run out of memory
-		assert( walker + sizeof( T ) < memory + BUFFER_SIZE_BYTES );
+		assert(m_Walker + sizeof(T) < m_Memory + m_MemoryByteSize);
 #endif
-		memcpy( walker, &count, sizeof( size_t ) );
+		memcpy(m_Walker, &count, sizeof(size_t));
 
-		Byte* returnPos = walker + sizeof( size_t );
+		Byte* returnPos = m_Walker + sizeof(size_t);
 
-		size_t size = count * sizeof( T ) + sizeof( size_t );
-		size += ( size & 0xF ) ? 16 - ( size & 0xF ) : 0; // 16-byte alignment
-		walker += size;
+		size_t size = count * sizeof(T) + sizeof(size_t);
+		size += (size & m_Alignment) ? m_Alignment - (size & m_Alignment) : 0; // 16-byte alignment
+		m_Walker += size;
 
-		return reinterpret_cast<T*>( returnPos );
+		return reinterpret_cast<T*>(returnPos);
 	}
 
 	template<typename T>
-	T* Create( size_t count )
+	T* Create(size_t count)
 	{
-		T* pointer = Allocate<T>( count );
-		for ( size_t i = 0; i < count; ++i )
+		T* pointer = Allocate<T>(count);
+		for (size_t i = 0; i < count; ++i)
 		{
-			new( &pointer[i] ) T();
+			new(&pointer[i]) T();
 		}
 
 		return pointer;
 	}
 
 	template<typename T>
-	void Destroy( T*& pointer )
+	void Destroy(T*& pointer)
 	{
 		size_t count = 0;
-		memcpy( &count, reinterpret_cast<Byte*>( pointer ) - sizeof( size_t ), sizeof( size_t ) );
+		memcpy(&count, reinterpret_cast<Byte*>(pointer) - sizeof(size_t), sizeof(size_t));
 
-		if ( pointer != nullptr )
+		if (pointer != nullptr)
 		{
-			for ( size_t i = 0; i < count; ++i )
+			for (size_t i = 0; i < count; ++i)
 			{
 				pointer[i].~T();
 			}
 		}
 	}
-}
+
+private:
+	Byte*	m_Memory = nullptr;
+	Byte*	m_Walker = nullptr;
+
+	size_t	m_MemoryByteSize;
+	size_t	m_Alignment;
+};

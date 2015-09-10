@@ -27,7 +27,22 @@
 *.out
 *.app
 
+#VS
+*.suo
+*.vcxproj
+*.filters
+*.opensdf
+*.sdf
+*.sln
+*.suo
+*.user
+
 #Folders
-proj/
 bin/
 build/
+proj/x64
+
+#CMake
+proj/CMakeCache.txt
+proj/CMakeFiles/
+*.cmake

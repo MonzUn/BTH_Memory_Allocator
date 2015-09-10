@@ -1,11 +1,11 @@
+#include <new>
+#include <chrono>
+#include <algorithm>
+#include "MemoryAllocator.h"
 #include "FrameAllocator.h"
 #include "PoolAllocator.h"
 #include "Logger.h"
-#include <new>
-#include <iostream>
-#include <string>
-#include <chrono>
-#include <algorithm>
+
 
 // Check windows
 #if _WIN32 || _WIN64
@@ -29,21 +29,17 @@ struct DebugStruct
 {
 	DebugStruct() {};
 	DebugStruct( bool alpaca, int numberOfLegs ) : Alpaca( alpaca ), NumberOfLegs( numberOfLegs ) {};
-	~DebugStruct() {
-		int i = 0;
-	}
 
 	bool	Alpaca;
 	int		NumberOfLegs;
 };
 
-void testFrameAllocator();
-void testFrameAllocatorFill();
-void testPoolAllocator();
-void printHelp();
+void TestFrameAllocator();
+void TestFrameAllocatorFill();
+void TestPoolAllocator();
+void PrintHelp();
 
-
-Logger logOut;
+Logger LogOut;
 
 int main()
 {
@@ -59,44 +55,66 @@ int main()
 			quit = true;
 
 		else if (input == "frametest")
-			testFrameAllocator();
+			TestFrameAllocator();
 
 		else if (input == "frametestfill")
-			testFrameAllocatorFill();
+			TestFrameAllocatorFill();
 
 		else if (input == "pooltest")
-			testPoolAllocator();
+			TestPoolAllocator();
 
 		else if (input == "help" || input == "?")
-			printHelp();
+			PrintHelp();
 
 		else
-			logOut << "Invalid command.\n\n";
-
+			LogOut << "Invalid command.\n\n";
 	}
     return 0;
 }
 
-void testFrameAllocatorFill()
+void TestFrameAllocator()
 {
-#ifdef DISABLE_FRAME_ALLOCATOR
-	logOut << "Starting frame allocator test 'fill' without custom allocator.\n";
-#else
-	logOut << "Starting frame allocator test 'fill' with custom allocator.\n";
-#endif
+	MemoryAllocator::GetFrameAllocator()->Initialize( 32ULL * MEBI, 16ULL );
 
-	FrameAllocator::Initialize();
+	const unsigned int framesToRun			= 64;
+	const unsigned int iterationsPerFrame	= 100000;
+	for ( unsigned int i = 0; i < framesToRun; ++i )
+	{
+		for ( unsigned int j = 0; j < iterationsPerFrame; ++j )
+		{
+			Byte*			memoryPointer		= static_cast<Byte*>( fMalloc( 100 ) );
+			DebugStruct*	structPointer		= fNew( DebugStruct, true, 5 );
+			DebugStruct*	structArrayPointer	= fNewArray( DebugStruct, 3 );
+
+			fFree( memoryPointer );
+			fDelete( structPointer );
+			fDeleteArray( structArrayPointer );
+		}
+		MemoryAllocator::GetFrameAllocator()->Reset();
+	}
+
+	MemoryAllocator::GetFrameAllocator()->Shutdown();
+
+	LogOut << "\n";
+}
+
+void TestFrameAllocatorFill()
+{
+	LogOut << "Starting frame allocator test 'fill' with custom allocator.\n";
+
+	MemoryAllocator::GetFrameAllocator()->Initialize(32ULL * MEBI, 16ULL);
 
 	std::chrono::steady_clock::time_point start, end;
 	long long duration;
 
 	// Check if 64 or 32bit
+	// 32ULL * MEBI = (X * sizeof(T) + sizeof(size_t)) + (X * (100 * sizeof(T) + sizeof(size_t))
 #ifndef ENVIRONMENT64
-	const unsigned int noObjects = 144631;
+	const unsigned int noObjects = 310690;
 #else
-	const unsigned int noObjects = 139810;
+	const unsigned int noObjects = 289263;
 #endif
-	
+
 	start = std::chrono::high_resolution_clock::now();
 	Byte** test = fNewArray(Byte*, noObjects);
 
@@ -109,41 +127,15 @@ void testFrameAllocatorFill()
 	fDeleteArray(test);
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	
-	logOut << "Execution time of test: " << duration << " ms\n\n";
 
-	FrameAllocator::Reset();
-	FrameAllocator::Shutdown();
+	MemoryAllocator::GetFrameAllocator()->Reset();
+	MemoryAllocator::GetFrameAllocator()->Shutdown();
+
+	LogOut << "Execution time of test: " << duration << " ms\n\n";
 }
 
-void testFrameAllocator() 
-{
-	FrameAllocator::Initialize();
 
-	unsigned int framesToRun = 64;
-	do
-	{
-		for (unsigned int i = 0; i < 100000; ++i)
-		{
-			Byte*			memoryPointer		= static_cast<Byte*>( fMalloc( 100 ) );
-			DebugStruct*	structPointer		= fNew( DebugStruct, true, 5 );
-			DebugStruct*	structArrayPointer	= fNewArray( DebugStruct, 3 );
-
-			fFree( memoryPointer );
-			fDelete( structPointer );
-			fDeleteArray( structArrayPointer );
-		}
-
-		FrameAllocator::Reset();
-		--framesToRun;
-	} while (framesToRun > 0);
-
-	FrameAllocator::Shutdown();
-
-	logOut << "\n";
-}
-
-void testPoolAllocator()
+void TestPoolAllocator()
 {
 	const unsigned int ALLOCATIONS = 100000;
 
@@ -162,7 +154,7 @@ void testPoolAllocator()
 	}
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	logOut << "Allocation test WITHOUT pool allocator: " << duration << " ms\n";
+	LogOut << "Allocation test WITHOUT pool allocator: " << duration << " ms\n";
 
 	start = std::chrono::high_resolution_clock::now();
 	PoolAllocator* poolAllocator = new PoolAllocator(sizeof(DebugStruct), ALLOCATIONS);
@@ -177,15 +169,15 @@ void testPoolAllocator()
 	delete poolAllocator;
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	logOut << "Allocation test WITH pool allocator: " << duration << " ms\n\n";
+	LogOut << "Allocation test WITH pool allocator: " << duration << " ms\n\n";
 }
 
-void printHelp()
+void PrintHelp()
 {
-	logOut << "FrameTest\n";
-	logOut << "FrameTestFill\n";
-	logOut << "PoolTest\n";
-	logOut << "Quit\n";
+	LogOut << "FrameTest\n";
+	LogOut << "FrameTestFill\n";
+	LogOut << "PoolTest\n";
+	LogOut << "Quit\n";
 
-	logOut << "\n";
+	LogOut << "\n";
 }
