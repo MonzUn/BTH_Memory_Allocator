@@ -2,38 +2,15 @@
 #include <cstdlib>
 #include <cassert>
 #include <cstring>
-
-// Nicer name when dealing with char as byte
-typedef char Byte;
-static_assert( sizeof( Byte ) == 1, "Sizeof Byte must be 1" );
-
-//#define DISABLE_FRAME_ALLOCATOR
-
-#ifndef DISABLE_FRAME_ALLOCATOR
-#define fMalloc( count ) FrameAllocator::Allocate<Byte>( count )
-#define fNew( type, ... ) new( FrameAllocator::Allocate<type>( 1 ) ) type( __VA_ARGS__ )
-#define fNewArray( type, count ) FrameAllocator::Create<type>( count )
-#define fFree( pointer )
-#define fDelete( pointer ) FrameAllocator::Destroy( pointer )
-#define fDeleteArray( pointer ) FrameAllocator::Destroy ( pointer )
-#else
-#define fMalloc( count ) malloc( count )
-#define fNew( type, ... ) new type( __VA_ARGS__ )
-#define fNewArray( type, count ) new type[count]
-#define fFree( pointer ) free( pointer )
-#define fDelete( pointer ) delete pointer
-#define fDeleteArray( pointer ) delete[] pointer
-#endif
+#include "AllocatorUtility.h"
 
 #define FRAME_ALLOCATOR_DEBUG 1
 #define BUFFER_SIZE_BYTES_MEGA 16
 #define BUFFER_SIZE_BYTES BUFFER_SIZE_BYTES_MEGA * 1024ULL * 1024ULL
 
-namespace FrameAllocator
+class FrameAllocator
 {
-	static Byte* memory = nullptr;
-	static Byte* walker = nullptr;
-
+public:
 	void Initialize()
 	{
 		memory = static_cast<Byte*>( malloc( BUFFER_SIZE_BYTES ) );
@@ -94,4 +71,8 @@ namespace FrameAllocator
 			}
 		}
 	}
-}
+
+private:
+	Byte* memory = nullptr;
+	Byte* walker = nullptr;
+};

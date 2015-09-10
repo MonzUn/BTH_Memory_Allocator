@@ -1,10 +1,12 @@
 #include "FrameAllocator.h"
 #include "PoolAllocator.h"
 #include "Logger.h"
+#include "MemoryAllocator.h"
 #include <new>
 #include <iostream>
 #include <string>
 #include <chrono>
+
 
 struct DebugStruct
 {
@@ -45,7 +47,7 @@ int main()
 }
 
 void testFrameAllocator() {
-	FrameAllocator::Initialize();
+	MemoryAllocator::GetFrameAllocator()->Initialize();
 
 	unsigned int framesToRun = 64;
 	do
@@ -61,11 +63,11 @@ void testFrameAllocator() {
 			fDeleteArray( structArrayPointer );
 		}
 
-		FrameAllocator::Reset();
+		MemoryAllocator::GetFrameAllocator()->Reset();
 		--framesToRun;
 	} while (framesToRun > 0);
 
-	FrameAllocator::Shutdown();
+	MemoryAllocator::GetFrameAllocator()->Shutdown();
 }
 
 void testPoolAllocator()
