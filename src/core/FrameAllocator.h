@@ -13,18 +13,18 @@ class FrameAllocator
 public:
 	void Initialize()
 	{
-		memory = static_cast<Byte*>( malloc( BUFFER_SIZE_BYTES ) );
-		walker = memory;
+		m_Memory = static_cast<Byte*>( malloc( BUFFER_SIZE_BYTES ) );
+		m_Walker = m_Memory;
 	}
 
 	void Shutdown()
 	{
-		free( memory );
+		free( m_Memory );
 	}
 
 	void Reset()
 	{
-		walker = memory;
+		m_Walker = m_Memory;
 	}
 
 	template<typename T>
@@ -32,15 +32,15 @@ public:
 	{
 #if FRAME_ALLOCATOR_DEBUG == 1
 		// Ensure that we don't run out of memory
-		assert( walker + sizeof( T ) < memory + BUFFER_SIZE_BYTES );
+		assert( m_Walker + sizeof( T ) < m_Memory + BUFFER_SIZE_BYTES );
 #endif
-		memcpy( walker, &count, sizeof( size_t ) );
+		memcpy( m_Walker, &count, sizeof( size_t ) );
 
-		Byte* returnPos = walker + sizeof( size_t );
+		Byte* returnPos = m_Walker + sizeof( size_t );
 
 		size_t size = count * sizeof( T ) + sizeof( size_t );
 		size += ( size & 0xF ) ? 16 - ( size & 0xF ) : 0; // 16-byte alignment
-		walker += size;
+		m_Walker += size;
 
 		return reinterpret_cast<T*>( returnPos );
 	}
@@ -73,6 +73,6 @@ public:
 	}
 
 private:
-	Byte* memory = nullptr;
-	Byte* walker = nullptr;
+	Byte* m_Memory = nullptr;
+	Byte* m_Walker = nullptr;
 };
