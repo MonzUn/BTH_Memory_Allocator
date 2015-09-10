@@ -5,15 +5,20 @@
 #include "AllocatorUtility.h"
 
 #define FRAME_ALLOCATOR_DEBUG 1
-#define BUFFER_SIZE_BYTES_MEGA 16
-#define BUFFER_SIZE_BYTES BUFFER_SIZE_BYTES_MEGA * 1024ULL * 1024ULL
 
 class FrameAllocator
 {
 public:
-	void Initialize()
+	void Initialize( size_t memoryByteSize = 16 * MEBI, size_t alignment = 16 )
 	{
-		m_Memory = static_cast<Byte*>( malloc( BUFFER_SIZE_BYTES ) );
+		// Make sure that the memory size and the alignment is a power of 2
+		assert( ( memoryByteSize != 0 ) && ( ( memoryByteSize & ( ~memoryByteSize + 1 ) ) == memoryByteSize ) );
+		assert( ( alignment != 0 ) && ( ( alignment & ( ~alignment + 1 ) ) == alignment ) );
+
+		m_MemoryByteSize	= memoryByteSize;
+		m_Alignment			= alignment;
+
+		m_Memory = static_cast<Byte*>( malloc( memoryByteSize ) );
 		m_Walker = m_Memory;
 	}
 
@@ -32,14 +37,14 @@ public:
 	{
 #if FRAME_ALLOCATOR_DEBUG == 1
 		// Ensure that we don't run out of memory
-		assert( m_Walker + sizeof( T ) < m_Memory + BUFFER_SIZE_BYTES );
+		assert( m_Walker + sizeof( T ) < m_Memory + m_MemoryByteSize );
 #endif
 		memcpy( m_Walker, &count, sizeof( size_t ) );
 
 		Byte* returnPos = m_Walker + sizeof( size_t );
 
 		size_t size = count * sizeof( T ) + sizeof( size_t );
-		size += ( size & 0xF ) ? 16 - ( size & 0xF ) : 0; // 16-byte alignment
+		size += ( size & m_Alignment ) ? m_Alignment - ( size & m_Alignment ) : 0; // 16-byte alignment
 		m_Walker += size;
 
 		return reinterpret_cast<T*>( returnPos );
@@ -73,6 +78,9 @@ public:
 	}
 
 private:
-	Byte* m_Memory = nullptr;
-	Byte* m_Walker = nullptr;
+	Byte*	m_Memory = nullptr;
+	Byte*	m_Walker = nullptr;
+
+	size_t	m_MemoryByteSize;
+	size_t	m_Alignment;
 };

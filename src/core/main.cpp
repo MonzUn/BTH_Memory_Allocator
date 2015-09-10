@@ -47,7 +47,7 @@ int main()
 }
 
 void testFrameAllocator() {
-	MemoryAllocator::GetFrameAllocator()->Initialize();
+	MemoryAllocator::GetFrameAllocator()->Initialize( 32ULL * MEBI, 16ULL );
 
 	unsigned int framesToRun = 64;
 	do
