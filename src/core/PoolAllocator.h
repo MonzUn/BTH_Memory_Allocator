@@ -2,10 +2,13 @@
 #include <cstdlib>
 #include <cassert>
 
+#define POOL_ALLOCATOR_DEFAULT_BLOCK_SIZE 
+#define POOL_ALLOCATOR_DEFAULT_ALIGNMENT 0x8
+
 class PoolAllocator
 {
 public:
-	void Initialize( size_t blockSize, size_t blockCount, size_t alignment = 0x8 )
+	void Initialize( size_t blockSize, size_t blockCount, size_t alignment = POOL_ALLOCATOR_DEFAULT_ALIGNMENT )
 	{
 		assert( !mInitialized );
 
