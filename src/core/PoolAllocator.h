@@ -7,25 +7,23 @@
 class PoolAllocator
 {
 public:
-	PoolAllocator( size_t blockSize, size_t blockCount, size_t alignment = 0x8 )
+	void Initialize( size_t blockSize, size_t blockCount, size_t alignment = 0x8 )
 	{
+		assert( !m_Initialized );
+
 		mBlockSize = blockSize;
 		mBlockCount = blockCount;
 
 		// Make sure that the block count is bigger than zero
-		assert ( mBlockCount > 0 );
+		assert( mBlockCount > 0 );
 
 		// Adjust block size after alignment
-		if ( alignment < blockSize )
-		{
+		if ( alignment < blockSize ) {
 			size_t misalignment = mBlockSize & alignment;
-			if ( misalignment > 0 )
-			{
+			if ( misalignment > 0 ) {
 				mBlockSize += alignment - misalignment;
 			}
-		}
-		else if ( alignment > blockSize )
-		{
+		} else if ( alignment > blockSize ) {
 			mBlockSize = alignment;
 		}
 
@@ -36,8 +34,7 @@ public:
 
 		// Create a linked list with all free blocks
 		uintptr_t poolAddress = reinterpret_cast< uintptr_t >( mPool );
-		for ( size_t i = 0; i < mBlockCount; i++ )
-		{
+		for ( size_t i = 0; i < mBlockCount; i++ ) {
 			// Calculate block addresses
 			uintptr_t currBlockAddress = poolAddress + i * mBlockSize;
 			uintptr_t nextBlockAddress = i + 1 < mBlockCount ? currBlockAddress + mBlockSize : 0;
@@ -47,15 +44,21 @@ public:
 		}
 		mFreeBlocksFirst = reinterpret_cast< uintptr_t* >( poolAddress );
 		mFreeBlocksLast = reinterpret_cast< uintptr_t* >( poolAddress + ( mBlockCount - 1 ) * mBlockSize );
+
+		m_Initialized = true;
 	}
 
-	~PoolAllocator()
+	void Shutdown()
 	{
+		assert( m_Initialized );
 		free( mPool );
+		m_Initialized = false;
 	}
 
 	void* Allocate()
 	{
+		assert( m_Initialized );
+
 		// Make sure that we are not out of blocks
 		assert( mFreeBlocksFirst != nullptr );
 
@@ -79,6 +82,8 @@ public:
 	template <class T>
 	T* Allocate()
 	{
+		assert( m_Initialized );
+
 		// Make sure that the block size is bigger than or equal to T
 		assert( mBlockSize >= sizeof(T) );
 
@@ -87,6 +92,8 @@ public:
 
 	void Deallocate( void* block )
 	{
+		assert( m_Initialized );
+
 		if ( mFreeBlocksLast != nullptr )
 		{
 			// Put deallocated block address in previous last block
@@ -111,6 +118,8 @@ private:
 
 	uintptr_t* mFreeBlocksFirst;
 	uintptr_t* mFreeBlocksLast;
+
+	bool m_Initialized = false;
 };
 
 #endif
