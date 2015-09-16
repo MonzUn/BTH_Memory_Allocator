@@ -1,6 +1,4 @@
-#ifndef POOL_ALLOCATOR_H
-#define POOL_ALLOCATOR_H
-
+#pragma once
 #include <cstdlib>
 #include <cassert>
 
@@ -9,7 +7,7 @@ class PoolAllocator
 public:
 	void Initialize( size_t blockSize, size_t blockCount, size_t alignment = 0x8 )
 	{
-		assert( !m_Initialized );
+		assert( !mInitialized );
 
 		mBlockSize = blockSize;
 		mBlockCount = blockCount;
@@ -45,19 +43,19 @@ public:
 		mFreeBlocksFirst = reinterpret_cast< uintptr_t* >( poolAddress );
 		mFreeBlocksLast = reinterpret_cast< uintptr_t* >( poolAddress + ( mBlockCount - 1 ) * mBlockSize );
 
-		m_Initialized = true;
+		mInitialized = true;
 	}
 
 	void Shutdown()
 	{
-		assert( m_Initialized );
+		assert( mInitialized );
 		free( mPool );
-		m_Initialized = false;
+		mInitialized = false;
 	}
 
 	void* Allocate()
 	{
-		assert( m_Initialized );
+		assert( mInitialized );
 
 		// Make sure that we are not out of blocks
 		assert( mFreeBlocksFirst != nullptr );
@@ -82,7 +80,7 @@ public:
 	template <class T>
 	T* Allocate()
 	{
-		assert( m_Initialized );
+		assert( mInitialized );
 
 		// Make sure that the block size is bigger than or equal to T
 		assert( mBlockSize >= sizeof(T) );
@@ -92,7 +90,7 @@ public:
 
 	void Deallocate( void* block )
 	{
-		assert( m_Initialized );
+		assert( mInitialized );
 
 		if ( mFreeBlocksLast != nullptr )
 		{
@@ -119,7 +117,5 @@ private:
 	uintptr_t* mFreeBlocksFirst;
 	uintptr_t* mFreeBlocksLast;
 
-	bool m_Initialized = false;
+	bool mInitialized = false;
 };
-
-#endif

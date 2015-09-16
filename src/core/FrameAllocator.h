@@ -11,7 +11,7 @@ class FrameAllocator
 public:
 	void Initialize( size_t memoryByteSize = 1 * MEBI, size_t alignment = 16 )
 	{
-		assert( !m_Initialized );
+		assert( !mInitialized );
 
 		assert( alignment != 0 );
 		assert( ( alignment & ( ~alignment + 1 ) ) == alignment );	// The alignment must be a power of 2
@@ -19,43 +19,43 @@ public:
 		assert( memoryByteSize >= alignment );						// The memory size must be at least one alignment big
 		assert( memoryByteSize % alignment == 0 );					// The memory size must be a multiple of the alignment
 
-		m_MemoryByteSize	= memoryByteSize;
-		m_Alignment			= alignment;
+		mMemoryByteSize	= memoryByteSize;
+		mAlignment			= alignment;
 
-		m_Memory = static_cast<Byte*>( malloc( memoryByteSize ) );
-		m_Walker = m_Memory;
+		mMemory = static_cast<Byte*>( malloc( memoryByteSize ) );
+		mWalker = mMemory;
 
-		m_Initialized = true;
+		mInitialized = true;
 	}
 
 	void Shutdown()
 	{
-		assert( m_Initialized );
-		free( m_Memory );
-		m_Initialized = false;
+		assert( mInitialized );
+		free( mMemory );
+		mInitialized = false;
 	}
 
 	void Reset()
 	{
-		assert( m_Initialized );
-		m_Walker = m_Memory;
+		assert( mInitialized );
+		mWalker = mMemory;
 	}
 
 	template<typename T>
 	T* Allocate( size_t count = 1ULL)
 	{
-		assert( m_Initialized );
+		assert( mInitialized );
 #if FRAME_ALLOCATOR_DEBUG == 1
 		// Ensure that we don't run out of memory
-		assert( m_Walker + sizeof( T ) < m_Memory + m_MemoryByteSize );
+		assert( mWalker + sizeof( T ) < mMemory + mMemoryByteSize );
 #endif
-		memcpy( m_Walker, &count, sizeof( size_t ) );
+		memcpy( mWalker, &count, sizeof( size_t ) );
 
-		Byte* returnPos = m_Walker + sizeof( size_t );
+		Byte* returnPos = mWalker + sizeof( size_t );
 
 		size_t size = count * sizeof( T ) + sizeof( size_t );
-		size += ( size & m_Alignment ) ? m_Alignment - ( size & m_Alignment ) : 0; // Align the memory
-		m_Walker += size;
+		size += ( size & mAlignment ) ? mAlignment - ( size & mAlignment ) : 0; // Align the memory
+		mWalker += size;
 
 		return reinterpret_cast<T*>( returnPos );
 	}
@@ -63,7 +63,7 @@ public:
 	template<typename T>
 	T* Create( size_t count )
 	{
-		assert( m_Initialized );
+		assert( mInitialized );
 		T* pointer = Allocate<T>( count );
 		for ( size_t i = 0; i < count; ++i )
 		{
@@ -76,7 +76,7 @@ public:
 	template<typename T>
 	void Destroy( T*& pointer )
 	{
-		assert( m_Initialized );
+		assert( mInitialized );
 		size_t count = 0;
 		memcpy( &count, reinterpret_cast<Byte*>( pointer ) - sizeof( size_t ), sizeof( size_t ) );
 
@@ -90,11 +90,11 @@ public:
 	}
 
 private:
-	Byte*	m_Memory = nullptr;
-	Byte*	m_Walker = nullptr;
+	Byte*	mMemory;
+	Byte*	mWalker;
 
-	size_t	m_MemoryByteSize;
-	size_t	m_Alignment;
+	size_t	mMemoryByteSize;
+	size_t	mAlignment;
 
-	bool	m_Initialized = false;
+	bool	mInitialized = false;
 };
