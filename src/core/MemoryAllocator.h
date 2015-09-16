@@ -8,7 +8,7 @@
 //#define DISABLE_FRAME_ALLOCATOR
 //#define DISABLE_POOL_ALLOCATOR
 
-#define USE_SINGLE_POOL_ALLOCATOR // Undefine this to test the code used when there are multiple pool allocators for each thread
+//#define USE_SINGLE_POOL_ALLOCATOR // Undefine this to test the code used when there are multiple pool allocators for each thread
 
 #ifdef DISABLE_CUSTOM_ALLOCATORS
 #define DISABLE_FRAME_ALLOCATOR
@@ -77,7 +77,7 @@
 namespace MemoryAllocator // Will be hidden by DLL interface
 {
 	thread_local FrameAllocator FrameAlloc;
-	std::map<std::thread::id, std::map<size_t, PoolAllocator>> PoolAllocators;
+	thread_local std::map<size_t, PoolAllocator> PoolAllocators;
 #ifdef USE_SINGLE_POOL_ALLOCATOR
 	thread_local PoolAllocator PoolAlloc;
 #endif
@@ -87,18 +87,12 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 #ifdef USE_SINGLE_POOL_ALLOCATOR
 		PoolAlloc.Initialize( blockSize, blockCount, alignment );
 #else
-		std::thread::id threadID = std::this_thread::get_id();
-		if ( PoolAllocators.find( threadID ) == PoolAllocators.end() ) // Create an entry in the outer map if there isn't one already
-		{
-			PoolAllocators.emplace( std::piecewise_construct, std::forward_as_tuple( threadID ), std::make_tuple() );
-		}
-
-		assert( PoolAllocators.at( threadID ).find( blockSize ) == PoolAllocators.at( threadID ).end() ); // Assert that we aren't creating a duplicate
+		assert( PoolAllocators.find( blockSize ) == PoolAllocators.end() ); // Assert that we aren't creating a duplicate
 
 		PoolAllocator poolAllocator;
 		poolAllocator.Initialize( blockSize, blockCount, alignment );
 
-		PoolAllocators.at( threadID ).emplace( blockSize, poolAllocator );
+		PoolAllocators.emplace( blockSize, poolAllocator );
 #endif
 	}
 
@@ -107,12 +101,10 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 #ifdef USE_SINGLE_POOL_ALLOCATOR
 		PoolAlloc.Shutdown();
 #else
-		std::thread::id threadID = std::this_thread::get_id();
-		assert( PoolAllocators.find( threadID ) != PoolAllocators.end() ); // Assert that there is an entry for this thread
-		assert( PoolAllocators.at( threadID ).find( blockSize ) != PoolAllocators.at( threadID ).end() ); // Assert that the allocator to be shut down exists
+		assert( PoolAllocators.find( blockSize ) != PoolAllocators.end() ); // Assert that the allocator to be shut down exists
 
-		PoolAllocators.at( threadID ).at( blockSize ).Shutdown();
-		PoolAllocators.at( threadID ).erase( blockSize );
+		PoolAllocators.at( blockSize ).Shutdown();
+		PoolAllocators.erase( blockSize );
 #endif
 	}
 
@@ -121,10 +113,9 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 	{
 		PoolAllocator* returnAdress = nullptr;
 
-		auto& innerMap = PoolAllocators.at( std::this_thread::get_id() );
-		for ( auto& sizeAndAllocatorPair : innerMap )
+		for ( auto& sizeAndAllocatorPair : PoolAllocators )
 		{
-			if(sizeAndAllocatorPair.first >= byteSize)
+			if( sizeAndAllocatorPair.first >= byteSize )
 			{
 				returnAdress = &sizeAndAllocatorPair.second;
 				break;
