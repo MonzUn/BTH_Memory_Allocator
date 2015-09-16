@@ -74,7 +74,7 @@ int main()
 
 void TestFrameAllocator()
 {
-	MemoryAllocator::GetFrameAllocator()->Initialize( 32ULL * MEBI, 16ULL );
+	MemoryAllocator::FrameAlloc.Initialize( 32ULL * MEBI, 16ULL );
 
 	const unsigned int framesToRun			= 64;
 	const unsigned int iterationsPerFrame	= 100000;
@@ -90,10 +90,10 @@ void TestFrameAllocator()
 			fDelete( structPointer );
 			fDeleteArray( structArrayPointer );
 		}
-		MemoryAllocator::GetFrameAllocator()->Reset();
+		MemoryAllocator::FrameAlloc.Reset();
 	}
 
-	MemoryAllocator::GetFrameAllocator()->Shutdown();
+	MemoryAllocator::FrameAlloc.Shutdown();
 
 	LogOut << "\n";
 }
@@ -102,7 +102,7 @@ void TestFrameAllocatorFill()
 {
 	LogOut << "Starting frame allocator test 'fill' with custom allocator.\n";
 
-	MemoryAllocator::GetFrameAllocator()->Initialize(32ULL * MEBI, 16ULL);
+	MemoryAllocator::FrameAlloc.Initialize(32ULL * MEBI, 16ULL);
 
 	std::chrono::steady_clock::time_point start, end;
 	long long duration;
@@ -128,8 +128,8 @@ void TestFrameAllocatorFill()
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 
-	MemoryAllocator::GetFrameAllocator()->Reset();
-	MemoryAllocator::GetFrameAllocator()->Shutdown();
+	MemoryAllocator::FrameAlloc.Reset();
+	MemoryAllocator::FrameAlloc.Shutdown();
 
 	LogOut << "Execution time of test: " << duration << " ms\n\n";
 }
