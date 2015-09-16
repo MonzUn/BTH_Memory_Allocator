@@ -43,6 +43,8 @@ Logger LogOut;
 
 int main()
 {
+	PrintHelp();
+
 	bool quit = false;
 	while (!quit)
 	{
@@ -51,16 +53,16 @@ int main()
 		std::cin >> input;
 		std::transform(input.begin(), input.end(), input.begin(), ::tolower);
 
-		if (input == "quit")
+		if (input == "quit" || input == "exit" || input == "q")
 			quit = true;
 
-		else if (input == "frametest")
+		else if (input == "frametest" || input == "f")
 			TestFrameAllocator();
 
-		else if (input == "frametestfill")
+		else if (input == "frametestfill" || input == "ff")
 			TestFrameAllocatorFill();
 
-		else if (input == "pooltest")
+		else if (input == "pooltest" || input == "p")
 			TestPoolAllocator();
 
 		else if (input == "help" || input == "?")
@@ -175,10 +177,12 @@ void TestPoolAllocator()
 
 void PrintHelp()
 {
-	LogOut << "FrameTest\n";
-	LogOut << "FrameTestFill\n";
-	LogOut << "PoolTest\n";
-	LogOut << "Quit\n";
+	LogOut << "The following commands are supported\n\n";
+
+	LogOut << "- FrameTest (f)\n";
+	LogOut << "- FrameTestFill (ff)\n";
+	LogOut << "- PoolTest (p)\n";
+	LogOut << "- Quit (q)\n";
 
 	LogOut << "\n";
 }
