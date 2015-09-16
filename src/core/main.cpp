@@ -76,7 +76,7 @@ int main()
 
 void TestFrameAllocator()
 {
-	MemoryAllocator::FrameAlloc.Initialize( 32ULL * MEBI, 16ULL );
+	InitializeFrameAllocator( 32ULL * MEBI, 16ULL );
 
 	const unsigned int framesToRun			= 64;
 	const unsigned int iterationsPerFrame	= 100000;
@@ -92,10 +92,10 @@ void TestFrameAllocator()
 			fDelete( structPointer );
 			fDeleteArray( structArrayPointer );
 		}
-		MemoryAllocator::FrameAlloc.Reset();
+		ResetFrameAllocator();
 	}
 
-	MemoryAllocator::FrameAlloc.Shutdown();
+	ShutdownFrameAllocator();
 
 	LogOut << "\n";
 }
