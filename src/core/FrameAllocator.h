@@ -11,6 +11,8 @@ class FrameAllocator
 public:
 	void Initialize( size_t memoryByteSize = 16 * MEBI, size_t alignment = 16 )
 	{
+		assert( !m_Initialized );
+
 		assert( alignment != 0 );
 		assert( ( alignment & ( ~alignment + 1 ) ) == alignment );	// The alignment must be a power of 2
 
@@ -22,21 +24,27 @@ public:
 
 		m_Memory = static_cast<Byte*>( malloc( memoryByteSize ) );
 		m_Walker = m_Memory;
+
+		m_Initialized = true;
 	}
 
 	void Shutdown()
 	{
+		assert( m_Initialized );
 		free( m_Memory );
+		m_Initialized = false;
 	}
 
 	void Reset()
 	{
+		assert( m_Initialized );
 		m_Walker = m_Memory;
 	}
 
 	template<typename T>
 	T* Allocate( size_t count = 1ULL)
 	{
+		assert( m_Initialized );
 #if FRAME_ALLOCATOR_DEBUG == 1
 		// Ensure that we don't run out of memory
 		assert( m_Walker + sizeof( T ) < m_Memory + m_MemoryByteSize );
@@ -55,6 +63,7 @@ public:
 	template<typename T>
 	T* Create( size_t count )
 	{
+		assert( m_Initialized );
 		T* pointer = Allocate<T>( count );
 		for ( size_t i = 0; i < count; ++i )
 		{
@@ -67,6 +76,7 @@ public:
 	template<typename T>
 	void Destroy( T*& pointer )
 	{
+		assert( m_Initialized );
 		size_t count = 0;
 		memcpy( &count, reinterpret_cast<Byte*>( pointer ) - sizeof( size_t ), sizeof( size_t ) );
 
@@ -85,4 +95,6 @@ private:
 
 	size_t	m_MemoryByteSize;
 	size_t	m_Alignment;
+
+	bool	m_Initialized = false;
 };
