@@ -11,9 +11,11 @@ class FrameAllocator
 public:
 	void Initialize( size_t memoryByteSize = 16 * MEBI, size_t alignment = 16 )
 	{
-		// Make sure that the memory size and the alignment is a power of 2
-		assert( ( memoryByteSize != 0 ) && ( ( memoryByteSize & ( ~memoryByteSize + 1 ) ) == memoryByteSize ) );
-		assert( ( alignment != 0 ) && ( ( alignment & ( ~alignment + 1 ) ) == alignment ) );
+		assert( alignment != 0 );
+		assert( ( alignment & ( ~alignment + 1 ) ) == alignment );	// The alignment must be a power of 2
+
+		assert( memoryByteSize >= alignment );						// The memory size must be at least one alignment big
+		assert( memoryByteSize % alignment == 0 );					// The memory size must be a multiple of the alignment
 
 		m_MemoryByteSize	= memoryByteSize;
 		m_Alignment			= alignment;
@@ -44,7 +46,7 @@ public:
 		Byte* returnPos = m_Walker + sizeof( size_t );
 
 		size_t size = count * sizeof( T ) + sizeof( size_t );
-		size += ( size & m_Alignment ) ? m_Alignment - ( size & m_Alignment ) : 0; // 16-byte alignment
+		size += ( size & m_Alignment ) ? m_Alignment - ( size & m_Alignment ) : 0; // Align the memory
 		m_Walker += size;
 
 		return reinterpret_cast<T*>( returnPos );
