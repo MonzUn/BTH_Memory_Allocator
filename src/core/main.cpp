@@ -167,17 +167,17 @@ void TestPoolAllocator()
 	LogOut << "Allocation test WITHOUT pool allocator: " << duration << " ms\n";
 
 	start = std::chrono::high_resolution_clock::now();
-	PoolAllocator poolAllocator;
-	poolAllocator.Initialize(sizeof( DebugStruct ), ALLOCATIONS);
+	InitializePoolAllocator( sizeof( DebugStruct ), ALLOCATIONS, POOL_ALLOCATOR_DEFAULT_ALIGNMENT );
+
 	for (size_t i = 0; i < ALLOCATIONS; ++i)
 	{
-		debugStructArray[i] = new(poolAllocator.Allocate<DebugStruct>()) DebugStruct(true, 5);
+		debugStructArray[i] = pNew( DebugStruct, true, 5 );
 	}
 	for (size_t i = 0; i < ALLOCATIONS; ++i)
 	{
-		poolAllocator.Deallocate(debugStructArray[i]);
+		pDelete( debugStructArray[i] );
 	}
-	poolAllocator.Shutdown();
+	ShutDownPoolAllocator( sizeof( DebugStruct ) );
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 	LogOut << "Allocation test WITH pool allocator: " << duration << " ms\n\n";
