@@ -9,7 +9,7 @@
 class FrameAllocator
 {
 public:
-	void Initialize( size_t memoryByteSize = 16 * MEBI, size_t alignment = 16 )
+	void Initialize( size_t memoryByteSize = 1 * MEBI, size_t alignment = 16 )
 	{
 		assert( !m_Initialized );
 
