@@ -76,10 +76,16 @@ int main()
 
 void TestFrameAllocator()
 {
+	std::chrono::steady_clock::time_point start, end;
+	long long duration;
+
+	LogOut << "Starting frame allocator test\n";
+
 	InitializeFrameAllocator( 32ULL * MEBI, 16ULL );
 
 	const unsigned int framesToRun			= 64;
 	const unsigned int iterationsPerFrame	= 100000;
+	start = std::chrono::high_resolution_clock::now();
 	for ( unsigned int i = 0; i < framesToRun; ++i )
 	{
 		for ( unsigned int j = 0; j < iterationsPerFrame; ++j )
@@ -97,12 +103,15 @@ void TestFrameAllocator()
 
 	ShutdownFrameAllocator();
 
-	LogOut << "\n";
+	end = std::chrono::high_resolution_clock::now();
+	duration = std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
+
+	LogOut << "Execution time of test: " << duration << " ms\n\n";
 }
 
 void TestFrameAllocatorFill()
 {
-	LogOut << "Starting frame allocator test 'fill' with custom allocator.\n";
+	LogOut << "Starting frame allocator 'fill' test\n";
 
 	MemoryAllocator::FrameAlloc.Initialize(32ULL * MEBI, 16ULL);
 
@@ -135,7 +144,6 @@ void TestFrameAllocatorFill()
 
 	LogOut << "Execution time of test: " << duration << " ms\n\n";
 }
-
 
 void TestPoolAllocator()
 {
