@@ -40,7 +40,7 @@
 	#define fSharedDelete( pointer ) MemoryAllocator::SharedFrameAllocator.Destroy( pointer )
 	#define fSharedDeleteArray( pointer ) MemoryAllocator::SharedFrameAllocator.Destroy ( pointer )
 #else
-	#define InitializeFrameAllocator()
+	#define InitializeFrameAllocator( dummy1, dummy2 )
 	#define ShutdownFrameAllocator()
 	#define ResetFrameAllocator()
 
@@ -87,8 +87,8 @@
 	#endif
 
 #else
-	#define InitializePoolAllocator()
-	#define ShutDownPoolAllocator()
+	#define InitializePoolAllocator( dummy1, dummy2, dummy3 )
+	#define ShutDownPoolAllocator( dummy )
 
 	#define pMalloc( count ) malloc( count )
 	#define pNew( type, ... ) new type( __VA_ARGS__ )
