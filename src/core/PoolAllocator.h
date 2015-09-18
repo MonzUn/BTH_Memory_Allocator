@@ -83,34 +83,16 @@ public:
 		// Make sure that the block size is bigger than or equal to T
 		assert( mBlockSize >= sizeof( T ) );
 
-		return reinterpret_cast<T*>( Allocate() );
+		return reinterpret_cast< T* >( Allocate() );
 	}
 
 	void Deallocate( void* block )
 	{
 		assert( mInitialized );
-
-<<<<<<< HEAD
-		if ( mFreeBlocksLast != nullptr )
-		{
-			// Put deallocated block address in previous last block
-			uintptr_t blockAddress = reinterpret_cast< uintptr_t >( block );
-			*mFreeBlocksLast = blockAddress;
-		}
-
-		// Set free blocks last pointer to deallocated block
-		mFreeBlocksLast = reinterpret_cast< uintptr_t* >( block );
-
-		if ( mFreeBlocksFirst == nullptr )
-		{
-			mFreeBlocksFirst = mFreeBlocksLast;
-		}
-=======
         // Put deallocated block address in the free blocks
         uintptr_t blockAddress = mFreeBlocks != nullptr ? reinterpret_cast< uintptr_t >( mFreeBlocks ) : 0;
         mFreeBlocks = reinterpret_cast< uintptr_t* >( block );
         *mFreeBlocks = blockAddress;
->>>>>>> f54e77a310d410d3aa2e581a0eb32a788e3e89e5
 	}
 
 private:
