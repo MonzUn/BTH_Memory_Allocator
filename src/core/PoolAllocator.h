@@ -47,8 +47,7 @@ public:
 			uintptr_t* currBlock = reinterpret_cast< uintptr_t* >( currBlockAddress );
 			*currBlock = nextBlockAddress;
 		}
-		mFreeBlocksFirst = reinterpret_cast< uintptr_t* >( poolAddress );
-		mFreeBlocksLast = reinterpret_cast< uintptr_t* >( poolAddress + ( mBlockCount - 1 ) * mBlockSize );
+		mFreeBlocks = reinterpret_cast< uintptr_t* >( poolAddress );
 
 		mInitialized = true;
 	}
@@ -65,21 +64,13 @@ public:
 		assert( mInitialized );
 
 		// Make sure that we are not out of blocks
-		assert( mFreeBlocksFirst != nullptr );
+		assert( mFreeBlocks != nullptr );
 
-		void* block = mFreeBlocksFirst;
+		void* block = mFreeBlocks;
 
 		// Forward the free blocks first pointer
-		uintptr_t nextAddress = *mFreeBlocksFirst;
-		if ( nextAddress != 0 )
-		{
-			mFreeBlocksFirst = reinterpret_cast<uintptr_t*>( nextAddress );
-		}
-		else
-		{
-			mFreeBlocksFirst	= nullptr;
-			mFreeBlocksLast		= nullptr;
-		}
+		uintptr_t nextAddress = *mFreeBlocks;
+        mFreeBlocks = nextAddress != 0 ? reinterpret_cast< uintptr_t* >( nextAddress ) : nullptr;
 
 		return block;
 	}
@@ -99,6 +90,7 @@ public:
 	{
 		assert( mInitialized );
 
+<<<<<<< HEAD
 		if ( mFreeBlocksLast != nullptr )
 		{
 			// Put deallocated block address in previous last block
@@ -113,6 +105,12 @@ public:
 		{
 			mFreeBlocksFirst = mFreeBlocksLast;
 		}
+=======
+        // Put deallocated block address in the free blocks
+        uintptr_t blockAddress = mFreeBlocks != nullptr ? reinterpret_cast< uintptr_t >( mFreeBlocks ) : 0;
+        mFreeBlocks = reinterpret_cast< uintptr_t* >( block );
+        *mFreeBlocks = blockAddress;
+>>>>>>> f54e77a310d410d3aa2e581a0eb32a788e3e89e5
 	}
 
 private:
@@ -120,9 +118,7 @@ private:
 	size_t mBlockCount;
 
 	void* mPool;
-
-	uintptr_t* mFreeBlocksFirst;
-	uintptr_t* mFreeBlocksLast;
+	uintptr_t* mFreeBlocks;
 
 	bool mInitialized = false;
 };
