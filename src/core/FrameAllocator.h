@@ -2,13 +2,13 @@
 #include <cstdlib>
 #include <cassert>
 #include <cstring>
+#include <mutex>
 #include "AllocatorUtility.h"
 
 #define FRAME_ALLOCATOR_DEBUG 1
 
 #define FRAME_ALLOCATOR_DEFAULT_MEMORY_BYTE_SIZE 1 * MEBI
 #define FRAME_ALLOCATOR_DEFAULT_ALIGNMENT 8
-
 class FrameAllocator
 {
 public:
@@ -23,7 +23,7 @@ public:
 		assert( memoryByteSize % alignment == 0 );					// The memory size must be a multiple of the alignment
 
 		mMemoryByteSize	= memoryByteSize;
-		mAlignment			= alignment;
+		mAlignment		= alignment;
 
 		mMemory = static_cast<Byte*>( malloc( memoryByteSize ) );
 		mWalker = mMemory;
@@ -92,6 +92,28 @@ public:
 		}
 	}
 
+	template<typename T>
+	T* SharedAllocate( size_t count = 1ULL ) 
+	{
+		assert( mInitialized );
+		mLock.lock();
+		T* toReturn = Allocate( count );
+		mLock.unlock();
+		return toReturn;
+	}
+
+	template<typename T>
+	T* SharedCreate( size_t count )
+	{
+		assert( mInitialized );
+		T* pointer = SharedAllocate<T>( count );
+		for ( size_t i = 0; i < count; ++i ) {
+			new( &pointer[i] ) T();
+		}
+
+		return pointer;
+	}
+
 private:
 	Byte*	mMemory;
 	Byte*	mWalker;
@@ -100,4 +122,6 @@ private:
 	size_t	mAlignment;
 
 	bool	mInitialized = false;
+
+	std::mutex mLock;
 };

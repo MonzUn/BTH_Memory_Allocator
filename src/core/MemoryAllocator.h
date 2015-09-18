@@ -1,6 +1,7 @@
 #pragma once
 #include <map>
 #include <thread>
+#include <mutex>
 #include "FrameAllocator.h"
 #include "PoolAllocator.h"
 
@@ -26,6 +27,18 @@
 	#define fFree( pointer )
 	#define fDelete( pointer ) MemoryAllocator::FrameAlloc.Destroy( pointer )
 	#define fDeleteArray( pointer ) MemoryAllocator::FrameAlloc.Destroy ( pointer )
+
+	// Note that Initialize, Shutdown and Reset must be called in a state where no other shared frame allocator functions may be called at the same time
+	#define InitializeSharedFrameAllocator( memoryByteSize, alignment ) MemoryAllocator::SharedFrameAllocator.Initialize( memoryByteSize, alignment )
+	#define ShutdownSharedFrameAllocator() MemoryAllocator::SharedFrameAllocator.Shutdown()
+	#define ResetSharedFrameAllocator() MemoryAllocator::SharedFrameAllocator.Reset()
+	
+	#define fSharedMalloc( count ) MemoryAllocator::SharedFrameAllocator.SharedAllocate<Byte>( count )
+	#define fSharedNew( type, ... ) new( MemoryAllocator::SharedFrameAllocator.SharedAllocate<type>( 1 ) ) type( __VA_ARGS__ )
+	#define fSharedNewArray( type, count ) MemoryAllocator::SharedFrameAllocator.SharedCreate<type>( count )
+	#define fSharedFree( pointer )
+	#define fSharedDelete( pointer ) MemoryAllocator::SharedFrameAllocator.Destroy( pointer )
+	#define fSharedDeleteArray( pointer ) MemoryAllocator::SharedFrameAllocator.Destroy ( pointer )
 #else
 	#define InitializeFrameAllocator()
 	#define ShutdownFrameAllocator()
@@ -37,6 +50,17 @@
 	#define fFree( pointer ) free( pointer )
 	#define fDelete( pointer ) delete pointer
 	#define fDeleteArray( pointer ) delete[] pointer
+
+	#define InitializeSharedFrameAllocator()
+	#define ShutdownSharedFrameAllocator()
+	#define ResetSharedFrameAllocator()
+
+	#define fSharedMalloc( count ) malloc( count )
+	#define fSharedNew( type, ... ) new type( __VA_ARGS__ )
+	#define fSharedNewArray( type, count ) new type[count]
+	#define fSharedFree( pointer ) free( pointer )
+	#define fSharedDelete( pointer ) delete pointer
+	#define fSharedDeleteArray( pointer ) delete[] pointer
 #endif
 
 #ifndef DISABLE_POOL_ALLOCATOR
@@ -78,6 +102,10 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 {
 	thread_local FrameAllocator FrameAlloc;
 	thread_local std::map<size_t, PoolAllocator> PoolAllocators;
+	FrameAllocator SharedFrameAllocator;
+	std::map<size_t, PoolAllocator> SharedPoolAllocators;
+	std::mutex SharedPoolAllocatorsLock;
+
 #ifdef USE_SINGLE_POOL_ALLOCATOR
 	thread_local PoolAllocator PoolAlloc;
 #endif
