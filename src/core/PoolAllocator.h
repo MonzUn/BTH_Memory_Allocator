@@ -19,12 +19,16 @@ public:
 		assert( mBlockCount > 0 );
 
 		// Adjust block size after alignment
-		if ( alignment < blockSize ) {
+		if ( alignment < blockSize ) 
+		{
 			size_t misalignment = mBlockSize & alignment;
-			if ( misalignment > 0 ) {
+			if ( misalignment > 0 )
+			{
 				mBlockSize += alignment - misalignment;
 			}
-		} else if ( alignment > blockSize ) {
+		}
+		else if ( alignment > blockSize )
+		{
 			mBlockSize = alignment;
 		}
 
@@ -69,12 +73,12 @@ public:
 		uintptr_t nextAddress = *mFreeBlocksFirst;
 		if ( nextAddress != 0 )
 		{
-			mFreeBlocksFirst = reinterpret_cast< uintptr_t* >(nextAddress);
+			mFreeBlocksFirst = reinterpret_cast<uintptr_t*>( nextAddress );
 		}
 		else
 		{
-			mFreeBlocksFirst = nullptr;
-			mFreeBlocksLast = nullptr;
+			mFreeBlocksFirst	= nullptr;
+			mFreeBlocksLast		= nullptr;
 		}
 
 		return block;
@@ -86,9 +90,9 @@ public:
 		assert( mInitialized );
 
 		// Make sure that the block size is bigger than or equal to T
-		assert( mBlockSize >= sizeof(T) );
+		assert( mBlockSize >= sizeof( T ) );
 
-		return reinterpret_cast< T* >(Allocate());
+		return reinterpret_cast<T*>( Allocate() );
 	}
 
 	void Deallocate( void* block )
@@ -98,7 +102,7 @@ public:
 		if ( mFreeBlocksLast != nullptr )
 		{
 			// Put deallocated block address in previous last block
-			uintptr_t blockAddress = reinterpret_cast< uintptr_t >(block);
+			uintptr_t blockAddress = reinterpret_cast< uintptr_t >( block );
 			*mFreeBlocksLast = blockAddress;
 		}
 
