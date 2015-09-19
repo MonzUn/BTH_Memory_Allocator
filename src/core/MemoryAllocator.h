@@ -1,7 +1,7 @@
 #pragma once
-#include <map>
 #include <thread>
 #include <mutex>
+#include <math.h>
 #include "FrameAllocator.h"
 #include "PoolAllocator.h"
 
@@ -10,6 +10,8 @@
 //#define DISABLE_POOL_ALLOCATOR
 
 //#define USE_SINGLE_POOL_ALLOCATOR // Undefine this to test the code used when there are multiple pool allocators for each thread
+
+#define POOL_ALLOCATOR_MAX_COUNT 20
 
 #ifdef DISABLE_CUSTOM_ALLOCATORS
 	#define DISABLE_FRAME_ALLOCATOR
@@ -101,10 +103,8 @@
 namespace MemoryAllocator // Will be hidden by DLL interface
 {
 	thread_local FrameAllocator FrameAlloc;
-	thread_local std::map<size_t, PoolAllocator> PoolAllocators;
+	thread_local PoolAllocator* PoolAllocators[POOL_ALLOCATOR_MAX_COUNT] = { nullptr };
 	FrameAllocator SharedFrameAllocator;
-	std::map<size_t, PoolAllocator> SharedPoolAllocators;
-	std::mutex SharedPoolAllocatorsLock;
 
 #ifdef USE_SINGLE_POOL_ALLOCATOR
 	thread_local PoolAllocator PoolAlloc;
@@ -115,12 +115,12 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 #ifdef USE_SINGLE_POOL_ALLOCATOR
 		PoolAlloc.Initialize( blockSize, blockCount, alignment );
 #else
-		assert( PoolAllocators.find( blockSize ) == PoolAllocators.end() ); // Assert that we aren't creating a duplicate
+		assert( PoolAllocators[static_cast<size_t>( log2(blockSize) )] == nullptr ); // Assert that we aren't creating a duplicate
 
-		PoolAllocator poolAllocator;
-		poolAllocator.Initialize( blockSize, blockCount, alignment );
+		PoolAllocator* poolAllocator = new PoolAllocator();
+		poolAllocator->Initialize( blockSize, blockCount, alignment );
 
-		PoolAllocators.emplace( blockSize, poolAllocator );
+		PoolAllocators[static_cast<size_t>( log2( blockSize ) )] = poolAllocator;
 #endif
 	}
 
@@ -129,10 +129,11 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 #ifdef USE_SINGLE_POOL_ALLOCATOR
 		PoolAlloc.Shutdown();
 #else
-		assert( PoolAllocators.find( blockSize ) != PoolAllocators.end() ); // Assert that the allocator to be shut down exists
+		assert( PoolAllocators[static_cast<size_t>( log2( blockSize ) )] != nullptr ); // Assert that the allocator to be shut down exists
 
-		PoolAllocators.at( blockSize ).Shutdown();
-		PoolAllocators.erase( blockSize );
+		PoolAllocators[static_cast<size_t>( log2( blockSize ) )]->Shutdown();
+		delete PoolAllocators[static_cast<size_t>( log2( blockSize ) )];
+		PoolAllocators[static_cast<size_t>( log2( blockSize ) )] = nullptr;
 #endif
 	}
 
@@ -141,11 +142,11 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 	{
 		PoolAllocator* returnAdress = nullptr;
 
-		for ( auto& sizeAndAllocatorPair : PoolAllocators )
+		for ( unsigned int i = 0; i < POOL_ALLOCATOR_MAX_COUNT; ++i ) // We could calculate a lowest possible start index here but that would take more time than to loop from the beginning (Profiled)
 		{
-			if( sizeAndAllocatorPair.first >= byteSize )
+			if ( PoolAllocators[i] != nullptr )
 			{
-				returnAdress = &sizeAndAllocatorPair.second;
+				returnAdress = PoolAllocators[i];
 				break;
 			}
 		}
