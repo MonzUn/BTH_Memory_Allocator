@@ -220,7 +220,7 @@ void TestPoolAllocator2()
 			//gameObjects.push_back(new GameObject(rand() % 20));
 			gameObjects.push_back(pNew(GameObject, rand() % 20));
 		}
-		for (int i = gameObjects.size()-1; i >= 0; --i)
+		for (int i = static_cast<int>( gameObjects.size() )-1; i >= 0; --i)
 		{
 			if (gameObjects[i]->DeleteMe())
 			{
