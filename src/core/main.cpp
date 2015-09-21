@@ -1,11 +1,11 @@
 #include <new>
+#include <vector>
 #include <chrono>
 #include <algorithm>
 #include "MemoryAllocator.h"
 #include "FrameAllocator.h"
 #include "PoolAllocator.h"
 #include "Logger.h"
-
 
 // Check windows
 #if _WIN32 || _WIN64
@@ -34,9 +34,20 @@ struct DebugStruct
 	int		NumberOfLegs;
 };
 
+struct GameObject
+{
+	GameObject() {};
+	GameObject(int lifeTime) : LifeTime(lifeTime) {};
+
+	bool DeleteMe() { LifeTime--; return (LifeTime > 0) ? false : true; }
+
+	int		LifeTime;
+};
+
 void TestFrameAllocator();
 void TestFrameAllocatorFill();
 void TestPoolAllocator();
+void TestPoolAllocator2();
 void PrintHelp();
 
 Logger LogOut;
@@ -64,6 +75,9 @@ int main()
 
 		else if (input == "pooltest" || input == "p")
 			TestPoolAllocator();
+
+		else if (input == "pooltest2" || input == "p2")
+			TestPoolAllocator2();
 
 		else if (input == "help" || input == "?")
 			PrintHelp();
@@ -183,6 +197,47 @@ void TestPoolAllocator()
 	LogOut << "Allocation test WITH pool allocator: " << duration << " ms\n\n";
 }
 
+void TestPoolAllocator2()
+{
+	const unsigned int ALLOCATIONS = 100000;
+	int notDone = ALLOCATIONS;
+
+	std::chrono::steady_clock::time_point start, end;
+	long long duration;
+	std::vector<GameObject*> gameObjects;
+
+	start = std::chrono::high_resolution_clock::now();
+	InitializePoolAllocator(sizeof(DebugStruct), ALLOCATIONS, POOL_ALLOCATOR_DEFAULT_ALIGNMENT);
+
+	srand(1337); // Set seed so the random is consistant
+
+	while (notDone > 0 || gameObjects.size() > 0)
+	{
+		// Create new gameObjects
+		while (rand() % 2 > 0)
+		{
+			notDone--;
+			//gameObjects.push_back(new GameObject(rand() % 20));
+			gameObjects.push_back(pNew(GameObject, rand() % 20));
+		}
+		for (int i = gameObjects.size()-1; i >= 0; --i)
+		{
+			if (gameObjects[i]->DeleteMe())
+			{
+				//delete(gameObjects[i]);
+				pDelete(gameObjects[i]);
+
+				gameObjects.erase(gameObjects.begin()+i);
+			}
+		}
+	}
+
+	ShutDownPoolAllocator(sizeof(DebugStruct));
+	end = std::chrono::high_resolution_clock::now();
+	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
+	LogOut << "Allocation test WITH pool allocator: " << duration << " ms\n\n";
+}
+
 void PrintHelp()
 {
 	LogOut << "The following commands are supported\n\n";
@@ -190,6 +245,7 @@ void PrintHelp()
 	LogOut << "- FrameTest (f)\n";
 	LogOut << "- FrameTestFill (ff)\n";
 	LogOut << "- PoolTest (p)\n";
+	LogOut << "- PoolTest2 (p2)\n";
 	LogOut << "- Quit (q)\n";
 
 	LogOut << "\n";
