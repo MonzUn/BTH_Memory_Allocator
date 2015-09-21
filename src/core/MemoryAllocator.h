@@ -69,20 +69,20 @@
 
 	#define pMalloc( count ) MemoryAllocator::FindFittingPoolAllocator( count )->Allocate<Byte>( count )
 	#define pNew( type, ... ) new( MemoryAllocator::FindFittingPoolAllocator( sizeof( type ) )->Allocate<type>() ) type( __VA_ARGS__ ) // TODO: Input 1 as parameter to Allocate when it supports arrays
-	//#define pNewArray( type, count ) // TODO: Add when pool allocator supports arrays
+	#define pNewArray( type, count ) MemoryAllocator::FindFittingPoolAllocator( sizeof( type * count ) )->Allocate<type>( count )
 	#define pFree( pointer ) MemoryAllocator::FindFittingPoolAllocator( *pointer )->Deallocate( pointer ) 
 	#define pDelete( pointer ) MemoryAllocator::FindFittingPoolAllocator( sizeof( *pointer ) )->Deallocate( pointer ) // TODO: Call Destroy when pool allocator supports it
-	//#define pDeleteArray( pointer ) // TODO: Add when pool allocator supports arrays
+	#define pDeleteArray( pointer, count ) MemoryAllocator::FindFittingPoolAllocator( sizeof( type ) * count )->Deallocate( pointer )
 
 	#define InitializeSharedPoolAllocator( blockSize, blockCount, alignment ) MemoryAllocator::CreateSharedPoolAllocator( blockSize, blockCount, alignment )
 	#define ShutdownSharedPoolAllocator( blockSize ) MemoryAllocator::RemoveSharedPoolAllocator( blockSize )
 
 	#define pSharedMalloc( count ) MemoryAllocator::FindFittingSharedPoolAllocator( count )->SharedAllocate<Byte>( count ) // TODO: Add when pool allocator supports thread safe allocate
 	#define pSharedNew( type, ... ) new( MemoryAllocator::FindFittingPoolAllocator( sizeof( type ) )->SharedAllocate<type>() ) type( __VA_ARGS__ ) // TODO: Add when pool allocator supports thread safe allocate // TODO: Input 1 as parameter to Allocate when it supports arrays
-	//#define pSharedNewArray( type, count ) // TODO: Add when pool allocator supports arrays
+	#define pSharedNewArray( type, count ) MemoryAllocator::FindFittingSharedPoolAllocator( sizeof( type ) * count )->SharedAllocate<type>( count )
 	#define pSharedFree( pointer ) MemoryAllocator::FindFittingSharedPoolAllocator( *pointer )->SharedDeallocate( pointer ) // TODO: Add when pool allocator supports shared deallocate
 	#define pSharedDelete( pointer ) MemoryAllocator::FindFittingSharedPoolAllocator( sizeof( *pointer ) )->Deallocate( pointer ) // TODO: Add when pool allocator supports shared deallocate // TODO: Call Destroy when pool allocator supports it
-	//#define pSharedDeleteArray( pointer ) // TODO: Add when pool allocator supports arrays
+	#define pSharedDeleteArray( pointer, count ) MemoryAllocator::FindFittingPoolAllocator( sizeof( type ) * count )->SharedDeallocate( pointer )
 #else
 	#define InitializePoolAllocator( dummy1, dummy2, dummy3 )
 	#define ShutDownPoolAllocator( dummy )

@@ -77,10 +77,10 @@ public:
 	}
 
 	template <class T>
-	T* Allocate()
+	T* Allocate( size_t count = 1 )
 	{
 		// Make sure that the block size is bigger than or equal to T
-		assert( mBlockSize >= sizeof( T ) );
+		assert( mBlockSize >= sizeof( T ) * count );
 
 		return reinterpret_cast< T* >( Allocate() );
 	}
@@ -97,7 +97,6 @@ public:
     template <class T>
     void Deallocate( T* block )
     {
-        block->~T();
         Deallocate( reinterpret_cast< void* >( block ) );
     }
 
@@ -110,8 +109,11 @@ public:
     }
 
     template <class T>
-    T* SharedAllocate()
+    T* SharedAllocate( size_t count )
     {
+        // Make sure that the block size is bigger than or equal to T
+        assert( mBlockSize >= sizeof( T ) * count );
+
         return reinterpret_cast< T* >( SharedAllocate() );
     }
 
@@ -125,7 +127,6 @@ public:
     template <class T>
     void SharedDeallocate( T* block )
     {
-        block->~T();
         SharedDeallocate( reinterpret_cast< void* >( block ) );
     }
 
