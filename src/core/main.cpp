@@ -191,7 +191,7 @@ void TestPoolAllocator()
 	{
 		pDelete( debugStructArray[i] );
 	}
-	ShutDownPoolAllocator( sizeof( DebugStruct ) );
+	ShutdownPoolAllocator(sizeof(DebugStruct ));
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 	LogOut << "Allocation test WITH pool allocator: " << duration << " ms\n\n";
@@ -232,7 +232,7 @@ void TestPoolAllocator2()
 		}
 	}
 
-	ShutDownPoolAllocator(sizeof(DebugStruct));
+	ShutdownPoolAllocator(sizeof(DebugStruct));
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 	LogOut << "Allocation test WITH pool allocator: " << duration << " ms\n\n";

@@ -65,7 +65,7 @@
 
 #ifndef DISABLE_POOL_ALLOCATOR
 	#define InitializePoolAllocator( blockSize, blockCount, alignment ) MemoryAllocator::CreatePoolAllocator( blockSize, blockCount, alignment )
-	#define ShutDownPoolAllocator( blockSize ) MemoryAllocator::RemovePoolAllocator( blockSize )
+	#define ShutdownPoolAllocator( blockSize ) MemoryAllocator::RemovePoolAllocator( blockSize )
 
 	#define pMalloc( count ) MemoryAllocator::FindFittingPoolAllocator( count )->Allocate<Byte>( count )
 	#define pNew( type, ... ) new( MemoryAllocator::FindFittingPoolAllocator( sizeof( type ) )->Allocate<type>() ) type( __VA_ARGS__ ) // TODO: Input 1 as parameter to Allocate when it supports arrays
