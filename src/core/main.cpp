@@ -217,16 +217,13 @@ void TestPoolAllocator2()
 		while (rand() % 2 > 0)
 		{
 			notDone--;
-			//gameObjects.push_back(new GameObject(rand() % 20));
 			gameObjects.push_back(pNew(GameObject, rand() % 20));
 		}
 		for (int i = static_cast<int>( gameObjects.size() )-1; i >= 0; --i)
 		{
 			if (gameObjects[i]->DeleteMe())
 			{
-				//delete(gameObjects[i]);
 				pDelete(gameObjects[i]);
-
 				gameObjects.erase(gameObjects.begin()+i);
 			}
 		}
