@@ -106,43 +106,49 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 
 	void CreatePoolAllocator( size_t blockSize, size_t blockCount, size_t alignment = POOL_ALLOCATOR_DEFAULT_ALIGNMENT )
 	{
-		assert( PoolAllocators[static_cast<size_t>( log2(blockSize) )] == nullptr ); // Assert that we aren't creating a duplicate
+		unsigned char index = static_cast<unsigned char>( log2( blockSize ) );
+		assert( PoolAllocators[index] == nullptr ); // Assert that we aren't creating a duplicate
 
 		PoolAllocator* poolAllocator = new PoolAllocator();
 		poolAllocator->Initialize( blockSize, blockCount, alignment );
 
-		PoolAllocators[static_cast<size_t>( log2( blockSize ) )] = poolAllocator;
+		PoolAllocators[index] = poolAllocator;
 	}
 
 	void CreateSharedPoolAllocator( size_t blockSize, size_t blockCount, size_t alignment = POOL_ALLOCATOR_DEFAULT_ALIGNMENT )
 	{
+		unsigned char index = static_cast<unsigned char>( log2( blockSize ) );
+
 		SharedPoolAllocatorsLock.lock();
-		assert( PoolAllocators[static_cast<size_t>( log2( blockSize ) )] == nullptr ); // Assert that we aren't creating a duplicate
+		assert( PoolAllocators[index] == nullptr ); // Assert that we aren't creating a duplicate
 
 		PoolAllocator* poolAllocator = new PoolAllocator();
 		poolAllocator->Initialize( blockSize, blockCount, alignment );
 
-		PoolAllocators[static_cast<size_t>( log2( blockSize ) )] = poolAllocator;
+		PoolAllocators[index] = poolAllocator;
 		SharedPoolAllocatorsLock.unlock();
 	}
 
 	void RemovePoolAllocator( size_t blockSize )
 	{
-		assert( PoolAllocators[static_cast<size_t>( log2( blockSize ) )] != nullptr ); // Assert that the allocator to be shut down exists
+		unsigned char index = static_cast<unsigned char>( log2( blockSize ) );
+		assert( PoolAllocators[index] != nullptr ); // Assert that the allocator to be shut down exists
 
-		PoolAllocators[static_cast<size_t>( log2( blockSize ) )]->Shutdown();
-		delete PoolAllocators[static_cast<size_t>( log2( blockSize ) )];
-		PoolAllocators[static_cast<size_t>( log2( blockSize ) )] = nullptr;
+		PoolAllocators[index]->Shutdown();
+		delete PoolAllocators[index];
+		PoolAllocators[index] = nullptr;
 	}
 
 	void RemoveSharedPoolAllocator( size_t blockSize )
 	{
-		SharedPoolAllocatorsLock.lock();
-		assert( PoolAllocators[static_cast<size_t>( log2( blockSize ) )] != nullptr ); // Assert that the allocator to be shut down exists
+		unsigned char index = static_cast<unsigned char>( log2( blockSize ) );
 
-		SharedPoolAllocators[static_cast<size_t>( log2( blockSize ) )]->Shutdown();
-		delete SharedPoolAllocators[static_cast<size_t>( log2( blockSize ) )];
-		SharedPoolAllocators[static_cast<size_t>( log2( blockSize ) )] = nullptr;
+		SharedPoolAllocatorsLock.lock();
+		assert( PoolAllocators[index] != nullptr ); // Assert that the allocator to be shut down exists
+
+		SharedPoolAllocators[index]->Shutdown();
+		delete SharedPoolAllocators[index];
+		SharedPoolAllocators[index] = nullptr;
 		SharedPoolAllocatorsLock.unlock();
 	}
 
