@@ -9,8 +9,6 @@
 //#define DISABLE_FRAME_ALLOCATOR
 //#define DISABLE_POOL_ALLOCATOR
 
-//#define USE_SINGLE_POOL_ALLOCATOR // Undefine this to test the code used when there are multiple pool allocators for each thread
-
 #define POOL_ALLOCATOR_MAX_COUNT 30
 
 #ifdef DISABLE_CUSTOM_ALLOCATORS
@@ -66,27 +64,15 @@
 #endif
 
 #ifndef DISABLE_POOL_ALLOCATOR
-	#ifdef USE_SINGLE_POOL_ALLOCATOR
-		#define InitializePoolAllocator( blockSize, blockCount, alignment ) MemoryAllocator::CreatePoolAllocator( blockSize, blockCount, alignment )
-		#define ShutDownPoolAllocator( blockSize ) MemoryAllocator::RemovePoolAllocator( blockSize )
+	#define InitializePoolAllocator( blockSize, blockCount, alignment ) MemoryAllocator::CreatePoolAllocator( blockSize, blockCount, alignment )
+	#define ShutDownPoolAllocator( blockSize ) MemoryAllocator::RemovePoolAllocator( blockSize )
 
-		#define pMalloc( count ) MemoryAllocator::PoolAlloc.Allocate<Byte>( count )
-		#define pNew( type, ... ) new( MemoryAllocator::PoolAlloc.Allocate<type>() ) type( __VA_ARGS__ ) // TODO: Input 1 as parameter to Allocate when it supports arrays
-		//#define pNewArray( type, count ) // TODO: Add when pool allocator supports arrays
-		#define pFree( pointer ) MemoryAllocator::PoolAlloc.Deallocate( pointer ) 
-		#define pDelete( pointer ) MemoryAllocator::PoolAlloc.Deallocate( pointer ) // TODO: Call Destroy when pool allocator supports it
-		//#define pDeleteArray( pointer ) // TODO: Add when pool allocator supports arrays
-	#else
-		#define InitializePoolAllocator( blockSize, blockCount, alignment ) MemoryAllocator::CreatePoolAllocator( blockSize, blockCount, alignment )
-		#define ShutDownPoolAllocator( blockSize ) MemoryAllocator::RemovePoolAllocator( blockSize )
-
-		#define pMalloc( count ) MemoryAllocator::FindFittingPoolAllocator( count )->Allocate<Byte>( count )
-		#define pNew( type, ... ) new( MemoryAllocator::FindFittingPoolAllocator( sizeof( type ) )->Allocate<type>() ) type( __VA_ARGS__ ) // TODO: Input 1 as parameter to Allocate when it supports arrays
-		//#define pNewArray( type, count ) // TODO: Add when pool allocator supports arrays
-		#define pFree( pointer ) MemoryAllocator::FindFittingPoolAllocator( *pointer )->Deallocate( pointer ) 
-		#define pDelete( pointer ) MemoryAllocator::FindFittingPoolAllocator( sizeof( *pointer ) )->Deallocate( pointer ) // TODO: Call Destroy when pool allocator supports it
-		//#define pDeleteArray( pointer ) // TODO: Add when pool allocator supports arrays
-	#endif
+	#define pMalloc( count ) MemoryAllocator::FindFittingPoolAllocator( count )->Allocate<Byte>( count )
+	#define pNew( type, ... ) new( MemoryAllocator::FindFittingPoolAllocator( sizeof( type ) )->Allocate<type>() ) type( __VA_ARGS__ ) // TODO: Input 1 as parameter to Allocate when it supports arrays
+	//#define pNewArray( type, count ) // TODO: Add when pool allocator supports arrays
+	#define pFree( pointer ) MemoryAllocator::FindFittingPoolAllocator( *pointer )->Deallocate( pointer ) 
+	#define pDelete( pointer ) MemoryAllocator::FindFittingPoolAllocator( sizeof( *pointer ) )->Deallocate( pointer ) // TODO: Call Destroy when pool allocator supports it
+	//#define pDeleteArray( pointer ) // TODO: Add when pool allocator supports arrays
 
 #else
 	#define InitializePoolAllocator( dummy1, dummy2, dummy3 )
@@ -106,38 +92,25 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 	thread_local PoolAllocator* PoolAllocators[POOL_ALLOCATOR_MAX_COUNT] = { nullptr };
 	FrameAllocator SharedFrameAllocator;
 
-#ifdef USE_SINGLE_POOL_ALLOCATOR
-	thread_local PoolAllocator PoolAlloc;
-#endif
-
 	void CreatePoolAllocator( size_t blockSize, size_t blockCount, size_t alignment = POOL_ALLOCATOR_DEFAULT_ALIGNMENT )
 	{
-#ifdef USE_SINGLE_POOL_ALLOCATOR
-		PoolAlloc.Initialize( blockSize, blockCount, alignment );
-#else
 		assert( PoolAllocators[static_cast<size_t>( log2(blockSize) )] == nullptr ); // Assert that we aren't creating a duplicate
 
 		PoolAllocator* poolAllocator = new PoolAllocator();
 		poolAllocator->Initialize( blockSize, blockCount, alignment );
 
 		PoolAllocators[static_cast<size_t>( log2( blockSize ) )] = poolAllocator;
-#endif
 	}
 
 	void RemovePoolAllocator( size_t blockSize )
 	{
-#ifdef USE_SINGLE_POOL_ALLOCATOR
-		PoolAlloc.Shutdown();
-#else
 		assert( PoolAllocators[static_cast<size_t>( log2( blockSize ) )] != nullptr ); // Assert that the allocator to be shut down exists
 
 		PoolAllocators[static_cast<size_t>( log2( blockSize ) )]->Shutdown();
 		delete PoolAllocators[static_cast<size_t>( log2( blockSize ) )];
 		PoolAllocators[static_cast<size_t>( log2( blockSize ) )] = nullptr;
-#endif
 	}
 
-#ifndef USE_SINGLE_POOL_ALLOCATOR
 	PoolAllocator* FindFittingPoolAllocator( size_t byteSize )
 	{
 		PoolAllocator* returnAdress = nullptr;
@@ -154,5 +127,4 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 		assert( returnAdress != nullptr ); // There was no allocator with sufficiently big block size
 		return returnAdress;
 	}
-#endif
 }
