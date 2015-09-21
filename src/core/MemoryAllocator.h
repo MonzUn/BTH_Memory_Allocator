@@ -11,7 +11,7 @@
 
 //#define USE_SINGLE_POOL_ALLOCATOR // Undefine this to test the code used when there are multiple pool allocators for each thread
 
-#define POOL_ALLOCATOR_MAX_COUNT 20
+#define POOL_ALLOCATOR_MAX_COUNT 30
 
 #ifdef DISABLE_CUSTOM_ALLOCATORS
 	#define DISABLE_FRAME_ALLOCATOR
