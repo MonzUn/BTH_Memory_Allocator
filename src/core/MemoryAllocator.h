@@ -93,6 +93,13 @@
 	#define pFree( pointer ) free( pointer )
 	#define pDelete( pointer ) delete pointer
 	#define pDeleteArray( pointer ) delete[] pointer
+
+	#define pSharedMalloc( count ) malloc( count )
+	#define pSharedNew( type, ... ) new type( __VA_ARGS__ )
+	#define pSharedNewArray( type, count ) new type[count]
+	#define pSharedFree( pointer ) free( pointer )
+	#define pSharedDelete( pointer ) delete pointer
+	#define pSharedDeleteArray( pointer ) delete[] pointer
 #endif
 
 namespace MemoryAllocator // Will be hidden by DLL interface
