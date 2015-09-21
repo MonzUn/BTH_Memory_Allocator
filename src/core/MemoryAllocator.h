@@ -85,7 +85,7 @@
 	#define pSharedDeleteArray( pointer, count ) MemoryAllocator::FindFittingPoolAllocator( sizeof( type ) * count )->SharedDeallocate( pointer )
 #else
 	#define InitializePoolAllocator( dummy1, dummy2, dummy3 )
-	#define ShutDownPoolAllocator( dummy )
+	#define ShutdownPoolAllocator( dummy )
 
 	#define pMalloc( count ) malloc( count )
 	#define pNew( type, ... ) new type( __VA_ARGS__ )
