@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdlib>
 #include <cassert>
+#include <mutex>
 
 #define POOL_ALLOCATOR_DEFAULT_BLOCK_SIZE 
 #define POOL_ALLOCATOR_DEFAULT_ALIGNMENT 0x8
@@ -78,8 +79,6 @@ public:
 	template <class T>
 	T* Allocate()
 	{
-		assert( mInitialized );
-
 		// Make sure that the block size is bigger than or equal to T
 		assert( mBlockSize >= sizeof( T ) );
 
@@ -95,6 +94,41 @@ public:
         *mFreeBlocks = blockAddress;
 	}
 
+    template <class T>
+    void Deallocate( T* block )
+    {
+        block->~T();
+        Deallocate( reinterpret_cast< void* >( block ) );
+    }
+
+    void* SharedAllocate()
+    {
+        mLock.lock();
+        void* block = Allocate();
+        mLock.unlock();
+        return block;
+    }
+
+    template <class T>
+    T* SharedAllocate()
+    {
+        return reinterpret_cast< T* >( SharedAllocate() );
+    }
+
+    void SharedDeallocate( void* block )
+    {
+        mLock.lock();
+        Deallocate( block );
+        mLock.unlock();
+    }
+
+    template <class T>
+    void SharedDeallocate( T* block )
+    {
+        block->~T();
+        SharedDeallocate( reinterpret_cast< void* >( block ) );
+    }
+
 private:
 	size_t mBlockSize;
 	size_t mBlockCount;
@@ -103,4 +137,6 @@ private:
 	uintptr_t* mFreeBlocks;
 
 	bool mInitialized = false;
+
+    std::mutex mLock;
 };
