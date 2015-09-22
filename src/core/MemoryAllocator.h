@@ -80,21 +80,21 @@ typedef char PoolAllocatorHandle;
 	#define pSharedFree( handle, pointer ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); MemoryAllocator::SharedPoolAllocators[handle]->SharedDeallocate( pointer ); MemoryAllocator::SharedPoolAllocatorsLock.unlock()
 	#define pSharedDelete( handle, pointer ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); MemoryAllocator::PoolAllocators[handle]->SharedDeallocate( pointer ); MemoryAllocator::SharedPoolAllocatorsLock.unlock() // TODO: Call Destroy when pool allocator supports it
 #else
-	#define InitializePoolAllocator( dummy1, dummy2, dummy3 )
-	#define ShutdownPoolAllocator( dummy )
+	#define InitializePoolAllocator( blockSize, blockCount, alignment ) INVALID_POOL_ALLOCATOR_HANDLE
+	#define ShutdownPoolAllocator( handle )
 
-	#define pMalloc( count ) malloc( count )
-	#define pNew( type, ... ) new type( __VA_ARGS__ )
-	#define pFree( pointer ) free( pointer )
-	#define pDelete( pointer ) delete pointer
+	#define pMalloc( handle, count ) malloc( count )
+	#define pNew( handle, type, ... ) new type( __VA_ARGS__ )
+	#define pFree( handle, pointer ) free( pointer )
+	#define pDelete( handle, pointer ) delete pointer
 
-	#define InitializeSharedPoolAllocator( dummy1, dummy2, dummy3 )
-	#define ShutdownSharedPoolAllocator( dummy )
+	#define InitializeSharedPoolAllocator( blockSize, blockCount, alignment ) INVALID_POOL_ALLOCATOR_HANDLE
+	#define ShutdownSharedPoolAllocator( handle )
 	
-	#define pSharedMalloc( count ) malloc( count )
-	#define pSharedNew( type, ... ) new type( __VA_ARGS__ )
-	#define pSharedFree( pointer ) free( pointer )
-	#define pSharedDelete( pointer ) delete pointer
+	#define pSharedMalloc( handle, count ) malloc( count )
+	#define pSharedNew( handle, type, ... ) new type( __VA_ARGS__ )
+	#define pSharedFree( handle, pointer ) free( pointer )
+	#define pSharedDelete( handle, pointer ) delete pointer
 #endif
 
 namespace MemoryAllocator // Will be hidden by DLL interface
