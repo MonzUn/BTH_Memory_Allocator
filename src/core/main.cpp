@@ -25,6 +25,8 @@
 #endif
 #endif
 
+#define THREAD_TEST_THREAD_COUNT_MAX 32
+
 struct DebugStruct
 {
 	DebugStruct() {};
@@ -67,8 +69,44 @@ int main()
 		if (input == "quit" || input == "exit" || input == "q")
 			quit = true;
 
-		else if (input == "frametest" || input == "f")
+		else if ( input == "frameTest" || input == "f" )
+		{
+			LogOut << "Starting frame allocator\n";
+			std::chrono::steady_clock::time_point start, end;
+			long long duration;
+
+			start = std::chrono::high_resolution_clock::now();
 			TestFrameAllocator();
+			end = std::chrono::high_resolution_clock::now();
+
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
+			LogOut << "Execution time of test: " << duration << " ms\n\n";
+		}
+
+		else if (input == "frametestThreaded" || input == "ft")
+		{
+			int threadCount;
+			std::cout << "Input thread count\n";
+			std::cin >> threadCount;
+			LogOut << "Starting frame allocator threaded test with "<< threadCount << " threads\n";
+			std::chrono::steady_clock::time_point start, end;
+			long long duration;
+			
+			start = std::chrono::high_resolution_clock::now();
+			std::thread threads[THREAD_TEST_THREAD_COUNT_MAX];
+			for ( int i = 0; i < threadCount; ++i )
+			{
+				threads[i] = std::thread( &TestFrameAllocator );
+			}
+			for ( int i = 0; i < threadCount; ++i )
+			{
+				threads[i].join();
+			}
+			end = std::chrono::high_resolution_clock::now();
+			duration = std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
+
+			LogOut << "Execution time of test: " << duration << " ms\n\n";
+		}
 
 		else if (input == "frametestfill" || input == "ff")
 			TestFrameAllocatorFill();
@@ -90,16 +128,10 @@ int main()
 
 void TestFrameAllocator()
 {
-	std::chrono::steady_clock::time_point start, end;
-	long long duration;
-
-	LogOut << "Starting frame allocator test\n";
-
 	InitializeFrameAllocator( 32ULL * MEBI, 16ULL );
 
 	const unsigned int framesToRun			= 64;
 	const unsigned int iterationsPerFrame	= 100000;
-	start = std::chrono::high_resolution_clock::now();
 	for ( unsigned int i = 0; i < framesToRun; ++i )
 	{
 		for ( unsigned int j = 0; j < iterationsPerFrame; ++j )
@@ -116,11 +148,6 @@ void TestFrameAllocator()
 	}
 
 	ShutdownFrameAllocator();
-
-	end = std::chrono::high_resolution_clock::now();
-	duration = std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
-
-	LogOut << "Execution time of test: " << duration << " ms\n\n";
 }
 
 void TestFrameAllocatorFill()
@@ -240,6 +267,7 @@ void PrintHelp()
 	LogOut << "The following commands are supported\n\n";
 
 	LogOut << "- FrameTest (f)\n";
+	LogOut << "- FrameThreadedTest (ft)\n";
 	LogOut << "- FrameTestFill (ff)\n";
 	LogOut << "- PoolTest (p)\n";
 	LogOut << "- PoolTest2 (p2)\n";
