@@ -127,12 +127,14 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 		return handle;
 	}
 
-	void RemovePoolAllocator( PoolAllocator** poolAllocators, PoolAllocatorHandle handle )
+	void RemovePoolAllocator( PoolAllocator** poolAllocators, PoolAllocatorHandle& handle )
 	{
 		assert( poolAllocators[handle] != nullptr ); // Assert that the allocator to be shut down exists
 
 		poolAllocators[handle]->Shutdown();
 		delete poolAllocators[handle];
 		poolAllocators[handle] = nullptr;
+
+		handle = INVALID_POOL_ALLOCATOR_HANDLE;
 	}
 }
