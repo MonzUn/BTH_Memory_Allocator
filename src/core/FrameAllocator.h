@@ -97,7 +97,7 @@ public:
 	{
 		assert( mInitialized );
 		mLock.lock();
-		T* toReturn = Allocate( count );
+		T* toReturn = Allocate<T>( count );
 		mLock.unlock();
 		return toReturn;
 	}

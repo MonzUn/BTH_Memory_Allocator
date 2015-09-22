@@ -42,7 +42,7 @@ typedef char PoolAllocatorHandle;
 	#define fSharedDelete( pointer ) MemoryAllocator::SharedFrameAllocator.Destroy( pointer )
 	#define fSharedDeleteArray( pointer ) MemoryAllocator::SharedFrameAllocator.Destroy ( pointer )
 #else
-	#define InitializeFrameAllocator( dummy1, dummy2 )
+	#define InitializeFrameAllocator( memoryByteSize, alignment )
 	#define ShutdownFrameAllocator()
 	#define ResetFrameAllocator()
 
@@ -53,7 +53,7 @@ typedef char PoolAllocatorHandle;
 	#define fDelete( pointer ) delete pointer
 	#define fDeleteArray( pointer ) delete[] pointer
 
-	#define InitializeSharedFrameAllocator()
+	#define InitializeSharedFrameAllocator( memoryByteSize, alignment )
 	#define ShutdownSharedFrameAllocator()
 	#define ResetSharedFrameAllocator()
 
