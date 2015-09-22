@@ -181,17 +181,17 @@ void TestPoolAllocator()
 	LogOut << "Allocation test WITHOUT pool allocator: " << duration << " ms\n";
 
 	start = std::chrono::high_resolution_clock::now();
-	InitializePoolAllocator( sizeof( DebugStruct ), ALLOCATIONS, POOL_ALLOCATOR_DEFAULT_ALIGNMENT );
+	PoolAllocatorHandle handle = InitializePoolAllocator(sizeof( DebugStruct ), ALLOCATIONS, POOL_ALLOCATOR_DEFAULT_ALIGNMENT);
 
 	for (size_t i = 0; i < ALLOCATIONS; ++i)
 	{
-		debugStructArray[i] = pNew( DebugStruct, true, 5 );
+		debugStructArray[i] = pNew(handle, DebugStruct, true, 5);
 	}
 	for (size_t i = 0; i < ALLOCATIONS; ++i)
 	{
-		pDelete( debugStructArray[i] );
+		pDelete(handle, debugStructArray[i]);
 	}
-	ShutdownPoolAllocator(sizeof(DebugStruct ));
+	ShutdownPoolAllocator(handle);
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 	LogOut << "Allocation test WITH pool allocator: " << duration << " ms\n\n";
@@ -207,7 +207,7 @@ void TestPoolAllocator2()
 	std::vector<GameObject*> gameObjects;
 
 	start = std::chrono::high_resolution_clock::now();
-	InitializePoolAllocator(sizeof(DebugStruct), ALLOCATIONS, POOL_ALLOCATOR_DEFAULT_ALIGNMENT);
+	PoolAllocatorHandle handle = InitializePoolAllocator(sizeof(DebugStruct), ALLOCATIONS, POOL_ALLOCATOR_DEFAULT_ALIGNMENT);
 
 	srand(1337); // Set seed so the random is consistant
 
@@ -217,19 +217,19 @@ void TestPoolAllocator2()
 		while (rand() % 2 > 0)
 		{
 			notDone--;
-			gameObjects.push_back(pNew(GameObject, rand() % 20));
+			gameObjects.push_back(pNew(handle, GameObject, rand() % 20));
 		}
 		for (int i = static_cast<int>( gameObjects.size() )-1; i >= 0; --i)
 		{
 			if (gameObjects[i]->DeleteMe())
 			{
-				pDelete(gameObjects[i]);
+				pDelete(handle, gameObjects[i]);
 				gameObjects.erase(gameObjects.begin()+i);
 			}
 		}
 	}
 
-	ShutdownPoolAllocator(sizeof(DebugStruct));
+	ShutdownPoolAllocator(handle);
 	end = std::chrono::high_resolution_clock::now();
 	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
 	LogOut << "Allocation test WITH pool allocator: " << duration << " ms\n\n";

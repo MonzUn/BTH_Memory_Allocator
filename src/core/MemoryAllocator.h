@@ -9,7 +9,9 @@
 //#define DISABLE_FRAME_ALLOCATOR
 //#define DISABLE_POOL_ALLOCATOR
 
-#define POOL_ALLOCATOR_MAX_COUNT 30
+#define POOL_ALLOCATOR_MAX_COUNT 127
+#define INVALID_POOL_ALLOCATOR_HANDLE -1
+typedef char PoolAllocatorHandle;
 
 #ifdef DISABLE_CUSTOM_ALLOCATORS
 	#define DISABLE_FRAME_ALLOCATOR
@@ -65,41 +67,34 @@
 
 #ifndef DISABLE_POOL_ALLOCATOR
 	#define InitializePoolAllocator( blockSize, blockCount, alignment ) MemoryAllocator::CreatePoolAllocator( blockSize, blockCount, alignment )
-	#define ShutdownPoolAllocator( blockSize ) MemoryAllocator::RemovePoolAllocator( blockSize )
-
-	#define pMalloc( count ) MemoryAllocator::FindFittingPoolAllocator( count )->Allocate<Byte>( count )
-	#define pNew( type, ... ) new( MemoryAllocator::FindFittingPoolAllocator( sizeof( type ) )->Allocate<type>() ) type( __VA_ARGS__ ) // TODO: Input 1 as parameter to Allocate when it supports arrays
-	#define pNewArray( type, count ) MemoryAllocator::FindFittingPoolAllocator( sizeof( type * count ) )->Allocate<type>( count )
-	#define pFree( pointer ) MemoryAllocator::FindFittingPoolAllocator( *pointer )->Deallocate( pointer ) 
-	#define pDelete( pointer ) MemoryAllocator::FindFittingPoolAllocator( sizeof( *pointer ) )->Deallocate( pointer ) // TODO: Call Destroy when pool allocator supports it
-	#define pDeleteArray( pointer, count ) MemoryAllocator::FindFittingPoolAllocator( sizeof( type ) * count )->Deallocate( pointer )
+	#define ShutdownPoolAllocator( handle ) MemoryAllocator::RemovePoolAllocator( handle )
+	#define pMalloc( handle, count ) MemoryAllocator::PoolAllocators[handle]->Allocate<Byte>( count )
+	#define pNew( handle, type, ... ) new( MemoryAllocator::PoolAllocators[handle]->Allocate<type>() ) type( __VA_ARGS__ )
+	#define pFree( handle, pointer ) MemoryAllocator::PoolAllocators[handle]->Deallocate( pointer ) 
+	#define pDelete( handle, pointer ) MemoryAllocator::PoolAllocators[handle]->Deallocate( pointer ) // TODO: Call Destroy when pool allocator supports it
 
 	#define InitializeSharedPoolAllocator( blockSize, blockCount, alignment ) MemoryAllocator::CreateSharedPoolAllocator( blockSize, blockCount, alignment )
-	#define ShutdownSharedPoolAllocator( blockSize ) MemoryAllocator::RemoveSharedPoolAllocator( blockSize )
-
-	#define pSharedMalloc( count ) MemoryAllocator::FindFittingSharedPoolAllocator( count )->SharedAllocate<Byte>( count ) // TODO: Add when pool allocator supports thread safe allocate
-	#define pSharedNew( type, ... ) new( MemoryAllocator::FindFittingPoolAllocator( sizeof( type ) )->SharedAllocate<type>() ) type( __VA_ARGS__ ) // TODO: Add when pool allocator supports thread safe allocate // TODO: Input 1 as parameter to Allocate when it supports arrays
-	#define pSharedNewArray( type, count ) MemoryAllocator::FindFittingSharedPoolAllocator( sizeof( type ) * count )->SharedAllocate<type>( count )
-	#define pSharedFree( pointer ) MemoryAllocator::FindFittingSharedPoolAllocator( *pointer )->SharedDeallocate( pointer ) // TODO: Add when pool allocator supports shared deallocate
-	#define pSharedDelete( pointer ) MemoryAllocator::FindFittingSharedPoolAllocator( sizeof( *pointer ) )->Deallocate( pointer ) // TODO: Add when pool allocator supports shared deallocate // TODO: Call Destroy when pool allocator supports it
-	#define pSharedDeleteArray( pointer, count ) MemoryAllocator::FindFittingPoolAllocator( sizeof( type ) * count )->SharedDeallocate( pointer )
+	#define ShutdownSharedPoolAllocator( handle ) MemoryAllocator::RemoveSharedPoolAllocator( handle )
+	#define pSharedMalloc( handle, count ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); MemoryAllocator::SharedPoolAllocators[handle]->SharedAllocate<Byte>( count ); MemoryAllocator::SharedPoolAllocatorsLock.unlock()
+	#define pSharedNew( handle, type, ... ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); new( MemoryAllocator::SharedPoolAllocators[handle]->SharedAllocate<type>() ) type( __VA_ARGS__ ); MemoryAllocator::SharedPoolAllocatorsLock.unlock()
+	#define pSharedFree( handle, pointer ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); MemoryAllocator::SharedPoolAllocators[handle]->SharedDeallocate( pointer ); MemoryAllocator::SharedPoolAllocatorsLock.unlock()
+	#define pSharedDelete( handle, pointer ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); MemoryAllocator::PoolAllocators[handle]->SharedDeallocate( pointer ); MemoryAllocator::SharedPoolAllocatorsLock.lock() // TODO: Call Destroy when pool allocator supports it
 #else
 	#define InitializePoolAllocator( dummy1, dummy2, dummy3 )
 	#define ShutdownPoolAllocator( dummy )
 
 	#define pMalloc( count ) malloc( count )
 	#define pNew( type, ... ) new type( __VA_ARGS__ )
-	#define pNewArray( type, count ) new type[count]
 	#define pFree( pointer ) free( pointer )
 	#define pDelete( pointer ) delete pointer
-	#define pDeleteArray( pointer ) delete[] pointer
 
+	#define InitializeSharedPoolAllocator( dummy1, dummy2, dummy3 )
+	#define ShutdownSharedPoolAllocator( dummy )
+	
 	#define pSharedMalloc( count ) malloc( count )
 	#define pSharedNew( type, ... ) new type( __VA_ARGS__ )
-	#define pSharedNewArray( type, count ) new type[count]
 	#define pSharedFree( pointer ) free( pointer )
 	#define pSharedDelete( pointer ) delete pointer
-	#define pSharedDeleteArray( pointer ) delete[] pointer
 #endif
 
 namespace MemoryAllocator // Will be hidden by DLL interface
@@ -111,88 +106,67 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 	PoolAllocator*				SharedPoolAllocators[POOL_ALLOCATOR_MAX_COUNT] = { nullptr };
 	std::mutex					SharedPoolAllocatorsLock;
 
-	void CreatePoolAllocator( size_t blockSize, size_t blockCount, size_t alignment = POOL_ALLOCATOR_DEFAULT_ALIGNMENT )
+	PoolAllocatorHandle CreatePoolAllocator( size_t blockSize, size_t blockCount, size_t alignment = POOL_ALLOCATOR_DEFAULT_ALIGNMENT )
 	{
-		unsigned char index = static_cast<unsigned char>( log2( blockSize ) );
-		assert( PoolAllocators[index] == nullptr ); // Assert that we aren't creating a duplicate
-
-		PoolAllocator* poolAllocator = new PoolAllocator();
-		poolAllocator->Initialize( blockSize, blockCount, alignment );
-
-		PoolAllocators[index] = poolAllocator;
-	}
-
-	void CreateSharedPoolAllocator( size_t blockSize, size_t blockCount, size_t alignment = POOL_ALLOCATOR_DEFAULT_ALIGNMENT )
-	{
-		unsigned char index = static_cast<unsigned char>( log2( blockSize ) );
-
-		SharedPoolAllocatorsLock.lock();
-		assert( PoolAllocators[index] == nullptr ); // Assert that we aren't creating a duplicate
-
-		PoolAllocator* poolAllocator = new PoolAllocator();
-		poolAllocator->Initialize( blockSize, blockCount, alignment );
-
-		PoolAllocators[index] = poolAllocator;
-		SharedPoolAllocatorsLock.unlock();
-	}
-
-	void RemovePoolAllocator( size_t blockSize )
-	{
-		unsigned char index = static_cast<unsigned char>( log2( blockSize ) );
-		assert( PoolAllocators[index] != nullptr ); // Assert that the allocator to be shut down exists
-
-		PoolAllocators[index]->Shutdown();
-		delete PoolAllocators[index];
-		PoolAllocators[index] = nullptr;
-	}
-
-	void RemoveSharedPoolAllocator( size_t blockSize )
-	{
-		unsigned char index = static_cast<unsigned char>( log2( blockSize ) );
-
-		SharedPoolAllocatorsLock.lock();
-		assert( PoolAllocators[index] != nullptr ); // Assert that the allocator to be shut down exists
-
-		SharedPoolAllocators[index]->Shutdown();
-		delete SharedPoolAllocators[index];
-		SharedPoolAllocators[index] = nullptr;
-		SharedPoolAllocatorsLock.unlock();
-	}
-
-	PoolAllocator* FindFittingPoolAllocator( size_t byteSize )
-	{
-		PoolAllocator* returnAdress = nullptr;
-
-		for ( unsigned int i = 0; i < POOL_ALLOCATOR_MAX_COUNT; ++i ) // We could calculate a lowest possible start index here but that would take more time than to loop from the beginning (Profiled)
+		PoolAllocatorHandle handle = INVALID_POOL_ALLOCATOR_HANDLE;
+		for ( char i = 0; i < POOL_ALLOCATOR_MAX_COUNT; ++i )
 		{
-			if ( PoolAllocators[i] != nullptr )
+			if ( PoolAllocators[i] == nullptr )
 			{
-				returnAdress = PoolAllocators[i];
+				handle = i;
 				break;
 			}
 		}
+		assert( handle != INVALID_POOL_ALLOCATOR_HANDLE ); // Assert that POOL_ALLOCATOR_MAX_COUNT has not been reached
 
-		assert( returnAdress != nullptr ); // There was no allocator with sufficiently big block size
-		return returnAdress;
+		PoolAllocator* poolAllocator = new PoolAllocator();
+		poolAllocator->Initialize( blockSize, blockCount, alignment );
+
+		PoolAllocators[handle] = poolAllocator;
+
+		return handle;
 	}
 
-	PoolAllocator* FindFittingSharedPoolAllocator( size_t byteSize )
+	PoolAllocatorHandle CreateSharedPoolAllocator( size_t blockSize, size_t blockCount, size_t alignment = POOL_ALLOCATOR_DEFAULT_ALIGNMENT )
 	{
-		PoolAllocator* returnAdress = nullptr;
-
+		PoolAllocatorHandle handle = INVALID_POOL_ALLOCATOR_HANDLE;
 		SharedPoolAllocatorsLock.lock();
-
-		for ( unsigned int i = 0; i < POOL_ALLOCATOR_MAX_COUNT; ++i ) // We could calculate a lowest possible start index here but that would take more time than to loop from the beginning (Profiled)
+		for ( char i = 0; i < POOL_ALLOCATOR_MAX_COUNT; ++i )
 		{
-			if ( SharedPoolAllocators[i] != nullptr ) {
-				returnAdress = SharedPoolAllocators[i];
+			if ( PoolAllocators[i] == nullptr )
+			{
+				handle = i;
 				break;
 			}
 		}
+		assert( handle != INVALID_POOL_ALLOCATOR_HANDLE ); // Assert that POOL_ALLOCATOR_MAX_COUNT has not been reached
 
+		PoolAllocator* poolAllocator = new PoolAllocator();
+		poolAllocator->Initialize( blockSize, blockCount, alignment );
+
+		SharedPoolAllocators[handle] = poolAllocator;
+		SharedPoolAllocatorsLock.unlock();
+
+		return handle;
+	}
+
+	void RemovePoolAllocator( PoolAllocatorHandle handle )
+	{
+		assert( PoolAllocators[handle] != nullptr ); // Assert that the allocator to be shut down exists
+
+		PoolAllocators[handle]->Shutdown();
+		delete PoolAllocators[handle];
+		PoolAllocators[handle] = nullptr;
+	}
+
+	void RemoveSharedPoolAllocator( PoolAllocatorHandle handle )
+	{
 		SharedPoolAllocatorsLock.lock();
+		assert( SharedPoolAllocators[handle] != nullptr ); // Assert that the allocator to be shut down exists
 
-		assert( returnAdress != nullptr ); // There was no allocator with sufficiently big block size
-		return returnAdress;
+		SharedPoolAllocators[handle]->Shutdown();
+		delete SharedPoolAllocators[handle];
+		SharedPoolAllocators[handle] = nullptr;
+		SharedPoolAllocatorsLock.unlock();
 	}
 }
