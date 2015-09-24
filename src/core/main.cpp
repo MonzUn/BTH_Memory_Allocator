@@ -26,6 +26,8 @@
 #endif
 
 #define THREAD_TEST_THREAD_COUNT_MAX 32
+#define FRAME_TEST_FRAME_COUNT 64
+#define FRAME_TEST_ITERATIONS_PER_FRAME 100000
 
 struct DebugStruct
 {
@@ -46,7 +48,7 @@ struct GameObject
 	int		LifeTime;
 };
 
-void TestFrameAllocator();
+void TestFrameAllocator(unsigned char* mallocSizes);
 void TestFrameAllocatorFill();
 void TestPoolAllocator();
 void TestPoolAllocator2();
@@ -71,12 +73,19 @@ int main()
 
 		else if ( input == "frameTest" || input == "f" )
 		{
-			LogOut << "Starting frame allocator\n";
+			LogOut << "Starting frame allocator test\n";
 			std::chrono::steady_clock::time_point start, end;
 			long long duration;
+			srand( 40805 );
+
+			unsigned char* allocationSizes = static_cast<unsigned char*>( malloc( sizeof( char ) * FRAME_TEST_ITERATIONS_PER_FRAME * FRAME_TEST_FRAME_COUNT ) );
+			for ( int i = 0; i < FRAME_TEST_ITERATIONS_PER_FRAME * FRAME_TEST_FRAME_COUNT; ++i)
+			{
+				allocationSizes[i] = rand() % UCHAR_MAX;
+			}
 
 			start = std::chrono::high_resolution_clock::now();
-			TestFrameAllocator();
+			TestFrameAllocator( allocationSizes );
 			end = std::chrono::high_resolution_clock::now();
 
 			duration = std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
@@ -88,6 +97,18 @@ int main()
 			int threadCount;
 			std::cout << "Input thread count\n";
 			std::cin >> threadCount;
+
+			srand( 40805 );
+			unsigned char* allocationSizeArrays[THREAD_TEST_THREAD_COUNT_MAX];
+			for ( int i = 0; i < threadCount; ++i )
+			{
+				allocationSizeArrays[i] = static_cast<unsigned char*>(malloc( sizeof( char ) * FRAME_TEST_ITERATIONS_PER_FRAME * FRAME_TEST_FRAME_COUNT ));
+				for ( int j = 0; j < FRAME_TEST_ITERATIONS_PER_FRAME * FRAME_TEST_FRAME_COUNT; ++j )
+				{
+					allocationSizeArrays[i][j] = rand() % UCHAR_MAX;
+				}
+			}
+
 			LogOut << "Starting frame allocator threaded test with "<< threadCount << " threads\n";
 			std::chrono::steady_clock::time_point start, end;
 			long long duration;
@@ -96,7 +117,7 @@ int main()
 			std::thread threads[THREAD_TEST_THREAD_COUNT_MAX];
 			for ( int i = 0; i < threadCount; ++i )
 			{
-				threads[i] = std::thread( &TestFrameAllocator );
+				threads[i] = std::thread( TestFrameAllocator, *allocationSizeArrays );
 			}
 			for ( int i = 0; i < threadCount; ++i )
 			{
@@ -126,23 +147,17 @@ int main()
     return 0;
 }
 
-void TestFrameAllocator()
+void TestFrameAllocator(unsigned char* mallocSizes)
 {
+	unsigned int mallocSizesIterator = 0;
 	InitializeFrameAllocator( 32ULL * MEBI, 16ULL );
 
-	const unsigned int framesToRun			= 64;
-	const unsigned int iterationsPerFrame	= 100000;
-	for ( unsigned int i = 0; i < framesToRun; ++i )
+	for ( unsigned int i = 0; i < FRAME_TEST_FRAME_COUNT; ++i )
 	{
-		for ( unsigned int j = 0; j < iterationsPerFrame; ++j )
+		for ( unsigned int j = 0; j < FRAME_TEST_ITERATIONS_PER_FRAME; ++j )
 		{
-			Byte*			memoryPointer		= static_cast<Byte*>( fMalloc( 100 ) );
-			DebugStruct*	structPointer		= fNew( DebugStruct, true, 5 );
-			DebugStruct*	structArrayPointer	= fNewArray( DebugStruct, 3 );
-
+			Byte* memoryPointer	= static_cast<Byte*>( fMalloc( mallocSizes[mallocSizesIterator++] ) );
 			fFree( memoryPointer );
-			fDelete( structPointer );
-			fDeleteArray( structArrayPointer );
 		}
 		ResetFrameAllocator();
 	}
