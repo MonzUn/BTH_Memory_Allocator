@@ -52,9 +52,7 @@ public:
 		// Ensure that we don't run out of memory
 		assert( mWalker + sizeof( T ) < mMemory + mMemoryByteSize );
 #endif
-		memcpy( mWalker, &count, sizeof( size_t ) );
-
-		Byte* returnPos = mWalker + sizeof( size_t );
+		Byte* returnPos = mWalker;
 
 		size_t size = count * sizeof( T ) + sizeof( size_t );
 		size += ( size & mAlignment ) ? mAlignment - ( size & mAlignment ) : 0; // Align the memory
@@ -64,31 +62,13 @@ public:
 	}
 
 	template<typename T>
-	T* Create( size_t count )
-	{
-		assert( mInitialized );
-		T* pointer = Allocate<T>( count );
-		for ( size_t i = 0; i < count; ++i )
-		{
-			new( &pointer[i] ) T();
-		}
-
-		return pointer;
-	}
-
-	template<typename T>
 	void Destroy( T*& pointer )
 	{
 		assert( mInitialized );
-		size_t count = 0;
-		memcpy( &count, reinterpret_cast<Byte*>( pointer ) - sizeof( size_t ), sizeof( size_t ) );
 
 		if ( pointer != nullptr )
 		{
-			for ( size_t i = 0; i < count; ++i )
-			{
-				pointer[i].~T();
-			}
+			pointer->~T();
 		}
 	}
 
@@ -100,18 +80,6 @@ public:
 		T* toReturn = Allocate<T>( count );
 		mLock.unlock();
 		return toReturn;
-	}
-
-	template<typename T>
-	T* SharedCreate( size_t count )
-	{
-		assert( mInitialized );
-		T* pointer = SharedAllocate<T>( count );
-		for ( size_t i = 0; i < count; ++i ) {
-			new( &pointer[i] ) T();
-		}
-
-		return pointer;
 	}
 
 private:

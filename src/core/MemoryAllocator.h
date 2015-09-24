@@ -25,10 +25,8 @@ typedef char PoolAllocatorHandle;
 
 	#define fMalloc( count ) MemoryAllocator::FrameAlloc.Allocate<Byte>( count )
 	#define fNew( type, ... ) new( MemoryAllocator::FrameAlloc.Allocate<type>( 1 ) ) type( __VA_ARGS__ )
-	#define fNewArray( type, count ) MemoryAllocator::FrameAlloc.Create<type>( count )
 	#define fFree( pointer )
 	#define fDelete( pointer ) MemoryAllocator::FrameAlloc.Destroy( pointer )
-	#define fDeleteArray( pointer ) MemoryAllocator::FrameAlloc.Destroy ( pointer )
 
 	// Note that Initialize, Shutdown and Reset must be called in a state where no other shared frame allocator functions may be called at the same time
 	#define InitializeSharedFrameAllocator( memoryByteSize, alignment ) MemoryAllocator::SharedFrameAllocator.Initialize( memoryByteSize, alignment )
@@ -37,10 +35,8 @@ typedef char PoolAllocatorHandle;
 	
 	#define fSharedMalloc( count ) MemoryAllocator::SharedFrameAllocator.SharedAllocate<Byte>( count )
 	#define fSharedNew( type, ... ) new( MemoryAllocator::SharedFrameAllocator.SharedAllocate<type>( 1 ) ) type( __VA_ARGS__ )
-	#define fSharedNewArray( type, count ) MemoryAllocator::SharedFrameAllocator.SharedCreate<type>( count )
 	#define fSharedFree( pointer )
 	#define fSharedDelete( pointer ) MemoryAllocator::SharedFrameAllocator.Destroy( pointer )
-	#define fSharedDeleteArray( pointer ) MemoryAllocator::SharedFrameAllocator.Destroy ( pointer )
 #else
 	#define InitializeFrameAllocator( memoryByteSize, alignment )
 	#define ShutdownFrameAllocator()
@@ -48,10 +44,8 @@ typedef char PoolAllocatorHandle;
 
 	#define fMalloc( count ) malloc( count )
 	#define fNew( type, ... ) new type( __VA_ARGS__ )
-	#define fNewArray( type, count ) new type[count]
 	#define fFree( pointer ) free( pointer )
 	#define fDelete( pointer ) delete pointer
-	#define fDeleteArray( pointer ) delete[] pointer
 
 	#define InitializeSharedFrameAllocator( memoryByteSize, alignment )
 	#define ShutdownSharedFrameAllocator()
@@ -59,10 +53,8 @@ typedef char PoolAllocatorHandle;
 
 	#define fSharedMalloc( count ) malloc( count )
 	#define fSharedNew( type, ... ) new type( __VA_ARGS__ )
-	#define fSharedNewArray( type, count ) new type[count]
 	#define fSharedFree( pointer ) free( pointer )
 	#define fSharedDelete( pointer ) delete pointer
-	#define fSharedDeleteArray( pointer ) delete[] pointer
 #endif
 
 #ifndef DISABLE_POOL_ALLOCATOR
