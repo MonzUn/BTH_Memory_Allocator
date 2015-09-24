@@ -49,7 +49,6 @@ struct GameObject
 };
 
 void TestFrameAllocator(unsigned char* mallocSizes);
-void TestFrameAllocatorFill();
 void TestPoolAllocator();
 void TestPoolAllocator2();
 void PrintHelp();
@@ -129,9 +128,6 @@ int main()
 			LogOut << "Execution time of test: " << duration << " ms\n\n";
 		}
 
-		else if (input == "frametestfill" || input == "ff")
-			TestFrameAllocatorFill();
-
 		else if (input == "pooltest" || input == "p")
 			TestPoolAllocator();
 
@@ -163,42 +159,6 @@ void TestFrameAllocator(unsigned char* mallocSizes)
 	}
 
 	ShutdownFrameAllocator();
-}
-
-void TestFrameAllocatorFill()
-{
-	LogOut << "Starting frame allocator 'fill' test\n";
-
-	MemoryAllocator::FrameAlloc.Initialize(32ULL * MEBI, 16ULL);
-
-	std::chrono::steady_clock::time_point start, end;
-	long long duration;
-
-	// Check if 64 or 32bit
-	// 32ULL * MEBI = (X * sizeof(T) + sizeof(size_t)) + (X * (100 * sizeof(T) + sizeof(size_t))
-#ifndef ENVIRONMENT64
-	const unsigned int noObjects = 310690;
-#else
-	const unsigned int noObjects = 289263;
-#endif
-
-	start = std::chrono::high_resolution_clock::now();
-	Byte** test = fNewArray(Byte*, noObjects);
-
-	for (unsigned int i = 0; i < noObjects; ++i)
-		test[i] = static_cast<Byte*>(fMalloc(100));
-
-	for (int i = noObjects - 1; i >= 0; --i)
-		fFree(test[i]);
-
-	fDeleteArray(test);
-	end = std::chrono::high_resolution_clock::now();
-	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-
-	MemoryAllocator::FrameAlloc.Reset();
-	MemoryAllocator::FrameAlloc.Shutdown();
-
-	LogOut << "Execution time of test: " << duration << " ms\n\n";
 }
 
 void TestPoolAllocator()
@@ -283,7 +243,6 @@ void PrintHelp()
 
 	LogOut << "- FrameTest (f)\n";
 	LogOut << "- FrameThreadedTest (ft)\n";
-	LogOut << "- FrameTestFill (ff)\n";
 	LogOut << "- PoolTest (p)\n";
 	LogOut << "- PoolTest2 (p2)\n";
 	LogOut << "- Quit (q)\n";
