@@ -60,14 +60,14 @@ typedef char PoolAllocatorHandle;
 #ifndef DISABLE_POOL_ALLOCATOR
 	#define InitializePoolAllocator( blockSize, blockCount, alignment ) MemoryAllocator::CreatePoolAllocator( MemoryAllocator::PoolAllocators, blockSize, blockCount, alignment )
 	#define ShutdownPoolAllocator( handle ) MemoryAllocator::RemovePoolAllocator( MemoryAllocator::PoolAllocators, handle )
-	#define pMalloc( handle, count ) MemoryAllocator::PoolAllocators[handle]->Allocate<Byte>( count )
+	#define pMalloc( handle, count ) MemoryAllocator::PoolAllocators[handle]->Allocate<Byte>()
 	#define pNew( handle, type, ... ) new( MemoryAllocator::PoolAllocators[handle]->Allocate<type>() ) type( __VA_ARGS__ )
 	#define pFree( handle, pointer ) MemoryAllocator::PoolAllocators[handle]->Deallocate( pointer ) 
 	#define pDelete( handle, pointer ) MemoryAllocator::PoolAllocators[handle]->Deallocate( pointer ) // TODO: Call Destroy when pool allocator supports it
 
 	#define InitializeSharedPoolAllocator( blockSize, blockCount, alignment ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); MemoryAllocator::CreateSharedPoolAllocator( MemoryAllocator::SharedPoolAllocators, blockSize, blockCount, alignment ); MemoryAllocator::SharedPoolAllocatorsLock.unlock()
 	#define ShutdownSharedPoolAllocator( handle ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); MemoryAllocator::RemoveSharedPoolAllocator( MemoryAllocator::SharedPoolAllocators, handle ); MemoryAllocator::SharedPoolAllocatorsLock.unlock();
-	#define pSharedMalloc( handle, count ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); MemoryAllocator::SharedPoolAllocators[handle]->SharedAllocate<Byte>( count ); MemoryAllocator::SharedPoolAllocatorsLock.unlock()
+	#define pSharedMalloc( handle, count ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); MemoryAllocator::SharedPoolAllocators[handle]->SharedAllocate<Byte>( ); MemoryAllocator::SharedPoolAllocatorsLock.unlock()
 	#define pSharedNew( handle, type, ... ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); new( MemoryAllocator::SharedPoolAllocators[handle]->SharedAllocate<type>() ) type( __VA_ARGS__ ); MemoryAllocator::SharedPoolAllocatorsLock.unlock()
 	#define pSharedFree( handle, pointer ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); MemoryAllocator::SharedPoolAllocators[handle]->SharedDeallocate( pointer ); MemoryAllocator::SharedPoolAllocatorsLock.unlock()
 	#define pSharedDelete( handle, pointer ) MemoryAllocator::SharedPoolAllocatorsLock.lock(); MemoryAllocator::PoolAllocators[handle]->SharedDeallocate( pointer ); MemoryAllocator::SharedPoolAllocatorsLock.unlock() // TODO: Call Destroy when pool allocator supports it
