@@ -29,6 +29,9 @@
 #define FRAME_TEST_FRAME_COUNT 64
 #define FRAME_TEST_ITERATIONS_PER_FRAME 100000
 
+#define POOL_TEST_ALLOCATIONS 100000
+#define POOL_TEST_BLOCK_SIZE 8
+
 struct DebugStruct
 {
 	DebugStruct() {};
@@ -49,9 +52,11 @@ struct GameObject
 };
 
 void TestFrameAllocator(unsigned char* mallocSizes);
-void TestPoolAllocator();
+void TestPoolAllocator( const uint32_t* order, size_t count );
 void TestPoolAllocator2();
 void PrintHelp();
+
+int Random( int i ) { return std::rand() % i; }
 
 Logger LogOut;
 
@@ -128,8 +133,66 @@ int main()
 			LogOut << "Execution time of test: " << duration << " ms\n\n";
 		}
 
-		else if (input == "pooltest" || input == "p")
-			TestPoolAllocator();
+        else if ( input == "pooltest" || input == "p" )
+        {
+            srand( 40805 );
+            std::vector<uint32_t> order( POOL_TEST_ALLOCATIONS * 3 );
+            for ( uint32_t i = 0; i < POOL_TEST_ALLOCATIONS; ++i )
+            {
+                order[ i * 3 + 0 ] = i;
+                order[ i * 3 + 1 ] = i;
+                order[ i * 3 + 2 ] = i;
+            }
+            std::random_shuffle( order.begin(), order.end(), Random );
+
+            std::chrono::steady_clock::time_point start, end;
+            start = std::chrono::high_resolution_clock::now();
+
+            TestPoolAllocator( &order[ 0 ], POOL_TEST_ALLOCATIONS );
+            
+            end = std::chrono::high_resolution_clock::now();
+            long long duration = std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
+            LogOut << "Execution time of test: " << duration << " ms\n\n";
+        }
+
+        else if ( input == "pooltestThreaded" || input == "pt" )
+        {
+            int threadCount;
+            std::cout << "Input thread count\n";
+            std::cin >> threadCount;
+
+            srand( 40805 );
+            std::vector<std::vector<uint32_t>> orders( threadCount );
+            for ( int t = 0; t < threadCount; ++t )
+            {
+                orders[ t ].resize( POOL_TEST_ALLOCATIONS * 3 );
+                for ( uint32_t i = 0; i < POOL_TEST_ALLOCATIONS; ++i )
+                {
+                    orders[ t ][ i * 3 + 0 ] = i;
+                    orders[ t ][ i * 3 + 1 ] = i;
+                    orders[ t ][ i * 3 + 2 ] = i;
+                }
+                std::random_shuffle( orders[ t ].begin(), orders[ t ].end(), Random );
+            }
+
+            std::thread threads[ THREAD_TEST_THREAD_COUNT_MAX ];
+
+            std::chrono::steady_clock::time_point start, end;
+            start = std::chrono::high_resolution_clock::now();
+
+            for ( int t = 0; t < threadCount; ++t )
+            {
+                threads[ t ] = std::thread( TestPoolAllocator, &orders[ t ][ 0 ], POOL_TEST_ALLOCATIONS );
+            }
+            for ( int t = 0; t < threadCount; ++t )
+            {
+                threads[ t ].join();
+            }
+
+            end = std::chrono::high_resolution_clock::now();
+            long long duration = std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
+            LogOut << "Execution time of test: " << duration << " ms\n\n";
+        }
 
 		else if (input == "pooltest2" || input == "p2")
 			TestPoolAllocator2();
@@ -161,42 +224,24 @@ void TestFrameAllocator(unsigned char* mallocSizes)
 	ShutdownFrameAllocator();
 }
 
-void TestPoolAllocator()
+void TestPoolAllocator( const uint32_t* order, size_t count )
 {
-	const unsigned int ALLOCATIONS = 100000;
+    std::vector<DebugStruct*> allocations( count, NULL );
 
-	std::chrono::steady_clock::time_point start, end;
-	long long duration;
-	DebugStruct* debugStructArray[ALLOCATIONS];
-
-	start = std::chrono::high_resolution_clock::now();
-	for (size_t i = 0; i < ALLOCATIONS; ++i)
+	PoolAllocatorHandle handle = InitializePoolAllocator( sizeof(DebugStruct), count, POOL_ALLOCATOR_DEFAULT_ALIGNMENT );
+    for (size_t i = 0; i < count * 3; ++i)
 	{
-		debugStructArray[i] = new DebugStruct(true, 5);
+        // Allocation
+        if ( allocations[ order[ i ] ] == NULL )
+            allocations[ order[ i ] ] = pNew( handle, DebugStruct, true, 4 );
+        // Assignment
+        else if ( allocations[ order[ i ] ]->Alpaca )
+            allocations[ order[ i ] ]->Alpaca = false;
+        // Deallocation
+        else
+            pDelete( handle, allocations[ order[ i ] ] );
 	}
-	for (size_t i = 0; i < ALLOCATIONS; ++i)
-	{
-		delete debugStructArray[i];
-	}
-	end = std::chrono::high_resolution_clock::now();
-	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	LogOut << "Allocation test WITHOUT pool allocator: " << duration << " ms\n";
-
-	start = std::chrono::high_resolution_clock::now();
-	PoolAllocatorHandle handle = InitializePoolAllocator(sizeof( DebugStruct ), ALLOCATIONS, POOL_ALLOCATOR_DEFAULT_ALIGNMENT);
-
-	for (size_t i = 0; i < ALLOCATIONS; ++i)
-	{
-		debugStructArray[i] = pNew(handle, DebugStruct, true, 5);
-	}
-	for (size_t i = 0; i < ALLOCATIONS; ++i)
-	{
-		pDelete(handle, debugStructArray[i]);
-	}
-	ShutdownPoolAllocator(handle);
-	end = std::chrono::high_resolution_clock::now();
-	duration = std::chrono::duration_cast<std::chrono::milliseconds>(end - start).count();
-	LogOut << "Allocation test WITH pool allocator: " << duration << " ms\n\n";
+	ShutdownPoolAllocator( handle );
 }
 
 void TestPoolAllocator2()
@@ -244,6 +289,7 @@ void PrintHelp()
 	LogOut << "- FrameTest (f)\n";
 	LogOut << "- FrameThreadedTest (ft)\n";
 	LogOut << "- PoolTest (p)\n";
+    LogOut << "- PoolTestThreaded (pt)\n";
 	LogOut << "- PoolTest2 (p2)\n";
 	LogOut << "- Quit (q)\n";
 
