@@ -137,12 +137,7 @@ void TestFrameAllocator()
 		for ( unsigned int j = 0; j < iterationsPerFrame; ++j )
 		{
 			Byte*			memoryPointer		= static_cast<Byte*>( fMalloc( 100 ) );
-			DebugStruct*	structPointer		= fNew( DebugStruct, true, 5 );
-			DebugStruct*	structArrayPointer	= fNewArray( DebugStruct, 3 );
-
 			fFree( memoryPointer );
-			fDelete( structPointer );
-			fDeleteArray( structArrayPointer );
 		}
 		ResetFrameAllocator();
 	}
