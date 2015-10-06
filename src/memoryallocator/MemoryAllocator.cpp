@@ -1,9 +1,12 @@
 #include "MemoryAllocator.h"
 
-PoolAllocatorHandle MemoryAllocator::CreatePoolAllocator( PoolAllocator** poolAllocators, size_t blockSize, size_t blockCount, size_t alignment ) {
+PoolAllocatorHandle MemoryAllocator::CreatePoolAllocator( PoolAllocator** poolAllocators, size_t blockSize, size_t blockCount, size_t alignment )
+{
 	PoolAllocatorHandle handle = INVALID_POOL_ALLOCATOR_HANDLE;
-	for ( char i = 0; i < POOL_ALLOCATOR_MAX_COUNT; ++i ) {
-		if ( poolAllocators[i] == nullptr ) {
+	for ( char i = 0; i < POOL_ALLOCATOR_MAX_COUNT; ++i )
+	{
+		if ( poolAllocators[i] == nullptr )
+		{
 			handle = i;
 			break;
 		}
@@ -18,7 +21,8 @@ PoolAllocatorHandle MemoryAllocator::CreatePoolAllocator( PoolAllocator** poolAl
 	return handle;
 }
 
-void MemoryAllocator::RemovePoolAllocator( PoolAllocator** poolAllocators, PoolAllocatorHandle& handle ) {
+void MemoryAllocator::RemovePoolAllocator( PoolAllocator** poolAllocators, PoolAllocatorHandle& handle )
+{
 	assert( poolAllocators[handle] != nullptr ); // Assert that the allocator to be shut down exists
 
 	poolAllocators[handle]->Shutdown();
