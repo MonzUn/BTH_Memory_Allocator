@@ -9,7 +9,7 @@
 #define pMalloc( handle, count ) MemoryAllocatorInstanceManager::PoolAllocators[handle]->Allocate<Byte>()
 #define pNew( handle, type, ... ) new( MemoryAllocatorInstanceManager::PoolAllocators[handle]->Allocate<type>() ) type( __VA_ARGS__ )
 #define pFree( handle, pointer ) MemoryAllocatorInstanceManager::PoolAllocators[handle]->Deallocate( pointer ) 
-#define pDelete( handle, pointer ) MemoryAllocatorInstanceManager::PoolAllocators[handle]->Deallocate( pointer ) // TODO: Call Destroy when pool allocator supports it
+#define pDelete( handle, pointer ) MemoryAllocatorInstanceManager::PoolAllocators[handle]->Deallocate( pointer )
 
 #define InitializeSharedPoolAllocator( blockSize, blockCount, alignment ) MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.lock(); MemoryAllocatorInstanceManager::CreateSharedPoolAllocator( MemoryAllocatorInstanceManager::SharedPoolAllocators, blockSize, blockCount, alignment ); MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.unlock()
 #define ShutdownSharedPoolAllocator( handle ) MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.lock(); MemoryAllocatorInstanceManager::RemoveSharedPoolAllocator( MemoryAllocator::SharedPoolAllocators, handle ); MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.unlock();
@@ -17,7 +17,7 @@
 #define pSharedMalloc( handle, count ) MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.lock(); MemoryAllocatorInstanceManager::SharedPoolAllocators[handle]->SharedAllocate<Byte>( ); MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.unlock()
 #define pSharedNew( handle, type, ... ) MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.lock(); new( MemoryAllocatorInstanceManager::SharedPoolAllocators[handle]->SharedAllocate<type>() ) type( __VA_ARGS__ ); MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.unlock()
 #define pSharedFree( handle, pointer ) MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.lock(); MemoryAllocatorInstanceManager::SharedPoolAllocators[handle]->SharedDeallocate( pointer ); MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.unlock()
-#define pSharedDelete( handle, pointer ) MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.lock(); MemoryAllocatorInstanceManager::PoolAllocators[handle]->SharedDeallocate( pointer ); MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.unlock() // TODO: Call Destroy when pool allocator supports it
+#define pSharedDelete( handle, pointer ) MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.lock(); MemoryAllocatorInstanceManager::PoolAllocators[handle]->SharedDeallocate( pointer ); MemoryAllocatorInstanceManager::SharedPoolAllocatorsLock.unlock()
 #else
 #define InitializePoolAllocator( blockSize, blockCount, alignment ) INVALID_POOL_ALLOCATOR_HANDLE
 #define ShutdownPoolAllocator( handle )
