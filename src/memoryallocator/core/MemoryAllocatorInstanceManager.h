@@ -1,7 +1,5 @@
 #pragma once
-#include <thread>
 #include <mutex>
-#include <math.h>
 #include "FrameAllocator.h"
 #include "PoolAllocator.h"
 #include "MemoryAllocatorLibraryDefine.h"
