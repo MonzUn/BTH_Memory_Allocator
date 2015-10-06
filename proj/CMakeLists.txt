@@ -7,7 +7,7 @@ option(CPU_PROFILE "CPU Profiling." ON)
 option(GPU_PROFILE "GPU Profiling." OFF)
 
 # Project name
-project(MemoryAllocator)
+project(BTHMemoryAllocator)
 
 if (UNIX)
 	set(CMAKE_CXX_FLAGS_DEBUG 	"${CMAKE_CXX_FLAGS_DEBUG} -g -fcolor-diagnostics -Wno-ignored-attributes -Wno-deprecated -Wno-shift-op-parentheses -fexceptions")
@@ -37,15 +37,15 @@ add_definitions(-D__extern_always_inline=inline)
 add_definitions(-DGLM_FORCE_RADIANS)
 
 # Define a variable for the root of the project (Not the project file)
-set(ProjectRoot ${MemoryAllocator_SOURCE_DIR}/../)
+set(ProjectRoot ${BTHMemoryAllocator_SOURCE_DIR}/../)
 get_filename_component(ProjectRootAbsolute ${ProjectRoot} ABSOLUTE)
 
 # Include directory
-file(RELATIVE_PATH IncludeDirectoryRelative ${MemoryAllocator_SOURCE_DIR} ${ProjectRootAbsolute}/include)
+file(RELATIVE_PATH IncludeDirectoryRelative ${BTHMemoryAllocator_SOURCE_DIR} ${ProjectRootAbsolute}/include)
 get_filename_component(IncludeDirectoryAbsolute ${IncludeDirectoryRelative} ABSOLUTE)
 
 # Library directory
-file(RELATIVE_PATH LibraryDirectoryRelative ${MemoryAllocator_SOURCE_DIR} ${ProjectRootAbsolute}/lib/64-bit)
+file(RELATIVE_PATH LibraryDirectoryRelative ${BTHMemoryAllocator_SOURCE_DIR} ${ProjectRootAbsolute}/lib/64-bit)
 get_filename_component(LibraryDirectoryAbsolute ${LibraryDirectoryRelative} ABSOLUTE)
 
 # Project settings
@@ -60,8 +60,14 @@ if(UNIX)
 	set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${ProjectRoot}/bin/${OperatingSystemNameLowerCase}/${CMAKE_BUILD_TYPE})
 endif(UNIX)
 
-set(CMAKE_INSTALL_PREFIX "${ProjectRoot}MemoryAllocator")
+set(CMAKE_INSTALL_PREFIX "${ProjectRoot}BTHMemoryAllocator")
 set(TargetArchitecture "x86_64")
+
+include_directories(
+	${IncludeDirectoryRelative}
+	${ProjectRoot}/src/
+)
 
 # Add each separate library/executable
 add_subdirectory(../src/core ../build/src/core)
+add_subdirectory(../src/memoryallocator ../build/src/memoryallocator)

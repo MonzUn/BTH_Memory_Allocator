@@ -2,9 +2,7 @@
 #include <vector>
 #include <chrono>
 #include <algorithm>
-#include "MemoryAllocator.h"
-#include "FrameAllocator.h"
-#include "PoolAllocator.h"
+#include <memoryallocator/MemoryAllocator.h>
 #include "Logger.h"
 
 // Check windows

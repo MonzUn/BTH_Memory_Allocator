@@ -4,6 +4,7 @@
 #include <math.h>
 #include "FrameAllocator.h"
 #include "PoolAllocator.h"
+#include "MemoryAllocatorLibraryDefine.h"
 
 //#define DISABLE_CUSTOM_ALLOCATORS
 //#define DISABLE_FRAME_ALLOCATOR
@@ -89,7 +90,7 @@ typedef char PoolAllocatorHandle;
 	#define pSharedDelete( handle, pointer ) delete pointer
 #endif
 
-namespace MemoryAllocator // Will be hidden by DLL interface
+namespace MemoryAllocator
 {
 	thread_local FrameAllocator FrameAlloc;
 	thread_local PoolAllocator* PoolAllocators[POOL_ALLOCATOR_MAX_COUNT] = { nullptr };
@@ -98,35 +99,7 @@ namespace MemoryAllocator // Will be hidden by DLL interface
 	PoolAllocator*				SharedPoolAllocators[POOL_ALLOCATOR_MAX_COUNT] = { nullptr };
 	std::mutex					SharedPoolAllocatorsLock;
 
-	PoolAllocatorHandle CreatePoolAllocator( PoolAllocator** poolAllocators, size_t blockSize, size_t blockCount, size_t alignment = POOL_ALLOCATOR_DEFAULT_ALIGNMENT )
-	{
-		PoolAllocatorHandle handle = INVALID_POOL_ALLOCATOR_HANDLE;
-		for ( char i = 0; i < POOL_ALLOCATOR_MAX_COUNT; ++i )
-		{
-			if ( poolAllocators[i] == nullptr )
-			{
-				handle = i;
-				break;
-			}
-		}
-		assert( handle != INVALID_POOL_ALLOCATOR_HANDLE ); // Assert that POOL_ALLOCATOR_MAX_COUNT has not been reached
+	MEMORYALLOCATOR_API PoolAllocatorHandle CreatePoolAllocator( PoolAllocator** poolAllocators, size_t blockSize, size_t blockCount, size_t alignment = POOL_ALLOCATOR_DEFAULT_ALIGNMENT );
 
-		PoolAllocator* poolAllocator = new PoolAllocator();
-		poolAllocator->Initialize( blockSize, blockCount, alignment );
-
-		poolAllocators[handle] = poolAllocator;
-
-		return handle;
-	}
-
-	void RemovePoolAllocator( PoolAllocator** poolAllocators, PoolAllocatorHandle& handle )
-	{
-		assert( poolAllocators[handle] != nullptr ); // Assert that the allocator to be shut down exists
-
-		poolAllocators[handle]->Shutdown();
-		delete poolAllocators[handle];
-		poolAllocators[handle] = nullptr;
-
-		handle = INVALID_POOL_ALLOCATOR_HANDLE;
-	}
+	MEMORYALLOCATOR_API void RemovePoolAllocator( PoolAllocator** poolAllocators, PoolAllocatorHandle& handle );
 }
