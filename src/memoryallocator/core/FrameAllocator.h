@@ -4,54 +4,26 @@
 #include <cstring>
 #include <mutex>
 #include "AllocatorUtility.h"
-
-#define FRAME_ALLOCATOR_DEBUG 1
+#include "MemoryAllocatorLibraryDefine.h"
 
 #define FRAME_ALLOCATOR_DEFAULT_MEMORY_BYTE_SIZE 1 * MEBI
 #define FRAME_ALLOCATOR_DEFAULT_ALIGNMENT 8
 class FrameAllocator
 {
 public:
-	void Initialize( size_t memoryByteSize = FRAME_ALLOCATOR_DEFAULT_MEMORY_BYTE_SIZE, size_t alignment = FRAME_ALLOCATOR_DEFAULT_ALIGNMENT )
-	{
-		assert( !mInitialized );
+	MEMORYALLOCATOR_API void Initialize( size_t memoryByteSize = FRAME_ALLOCATOR_DEFAULT_MEMORY_BYTE_SIZE, size_t alignment = FRAME_ALLOCATOR_DEFAULT_ALIGNMENT );
 
-		assert( alignment != 0 );
-		assert( ( alignment & ( ~alignment + 1 ) ) == alignment );	// The alignment must be a power of 2
+	MEMORYALLOCATOR_API void Shutdown();
 
-		assert( memoryByteSize >= alignment );						// The memory size must be at least one alignment big
-		assert( memoryByteSize % alignment == 0 );					// The memory size must be a multiple of the alignment
-
-		mMemoryByteSize	= memoryByteSize;
-		mAlignment		= alignment;
-
-		mMemory = static_cast<Byte*>( malloc( memoryByteSize ) );
-		mWalker = mMemory;
-
-		mInitialized = true;
-	}
-
-	void Shutdown()
-	{
-		assert( mInitialized );
-		free( mMemory );
-		mInitialized = false;
-	}
-
-	void Reset()
-	{
-		assert( mInitialized );
-		mWalker = mMemory;
-	}
+	MEMORYALLOCATOR_API void Reset();
 
 	template<typename T>
 	T* Allocate( size_t count = 1ULL)
 	{
 		assert( mInitialized );
-#if FRAME_ALLOCATOR_DEBUG == 1
+
 		// Ensure that we don't run out of memory
 		assert( mWalker + sizeof( T ) < mMemory + mMemoryByteSize );
-#endif
 		Byte* returnPos = mWalker;
 
 		size_t size = count * sizeof( T ) + sizeof( size_t );
