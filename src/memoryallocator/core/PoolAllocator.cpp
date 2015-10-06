@@ -51,8 +51,32 @@ void PoolAllocator::Shutdown()
 	mInitialized = false;
 }
 
-void* PoolAllocator::Allocate()
+void PoolAllocator::Deallocate( void* block )
 {
+	assert( mInitialized );
+
+    // Put deallocated block address in the free blocks
+    uintptr_t blockAddress = mFreeBlocks != nullptr ? reinterpret_cast<uintptr_t>( mFreeBlocks ) : 0;
+    mFreeBlocks = reinterpret_cast<uintptr_t*>( block );
+    *mFreeBlocks = blockAddress;
+}
+
+void* PoolAllocator::SharedAllocate()
+{
+	mLock.lock();
+	void* block = Allocate();
+	mLock.unlock();
+	return block;
+}
+
+void PoolAllocator::SharedDeallocate( void* block )
+{
+	mLock.lock();
+	Deallocate( block );
+	mLock.unlock();
+}
+
+void* PoolAllocator::Allocate() {
 	assert( mInitialized );
 
 	// Make sure that we are not out of blocks

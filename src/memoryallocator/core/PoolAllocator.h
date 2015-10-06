@@ -14,6 +14,12 @@ public:
 
 	MEMORYALLOCATOR_API void Shutdown();
 
+	MEMORYALLOCATOR_API void Deallocate( void* block );
+
+	MEMORYALLOCATOR_API void* SharedAllocate();
+
+	MEMORYALLOCATOR_API void SharedDeallocate( void* block );
+
 	template <class T>
 	T* Allocate()
 	{
@@ -23,28 +29,11 @@ public:
 		return reinterpret_cast<T*>( Allocate() );
 	}
 
-	void Deallocate( void* block )
-	{
-		assert( mInitialized );
-        // Put deallocated block address in the free blocks
-        uintptr_t blockAddress = mFreeBlocks != nullptr ? reinterpret_cast<uintptr_t>( mFreeBlocks ) : 0;
-        mFreeBlocks = reinterpret_cast<uintptr_t*>( block );
-        *mFreeBlocks = blockAddress;
-	}
-
     template <class T>
     void Deallocate( T* block )
     {
         block->~T();
         Deallocate( reinterpret_cast<void*>( block ) );
-    }
-
-    void* SharedAllocate()
-    {
-        mLock.lock();
-        void* block = Allocate();
-        mLock.unlock();
-        return block;
     }
 
     template <class T>
@@ -54,13 +43,6 @@ public:
         assert( mBlockSize >= sizeof( T ) );
 
         return reinterpret_cast<T*>( SharedAllocate() );
-    }
-
-    void SharedDeallocate( void* block )
-    {
-        mLock.lock();
-        Deallocate( block );
-        mLock.unlock();
     }
 
     template <class T>
