@@ -26,7 +26,7 @@
 #endif
 
 #define THREAD_TEST_THREAD_COUNT_MAX 32
-#define FRAME_TEST_FRAME_COUNT 64
+#define FRAME_TEST_FRAME_COUNT 128
 #define FRAME_TEST_ITERATIONS_PER_FRAME 100000
 
 #define POOL_TEST_ALLOCATIONS 1000000
@@ -48,10 +48,10 @@ struct GameObject
 
 	bool DeleteMe() { LifeTime--; return (LifeTime > 0) ? false : true; }
 
-	int		LifeTime;
+	int	LifeTime;
 };
 
-void TestFrameAllocator(unsigned char* mallocSizes);
+void TestFrameAllocator(unsigned char* mallocSizes, unsigned long long iterationsPerFrame);
 void TestPoolAllocator( const uint32_t* order, size_t count );
 void TestPoolAllocator2();
 void PrintHelp();
@@ -89,7 +89,7 @@ int main()
 			}
 
 			start = std::chrono::high_resolution_clock::now();
-			TestFrameAllocator( allocationSizes );
+			TestFrameAllocator( allocationSizes, FRAME_TEST_ITERATIONS_PER_FRAME );
 			end = std::chrono::high_resolution_clock::now();
 
 			duration = std::chrono::duration_cast<std::chrono::milliseconds>( end - start ).count();
@@ -121,7 +121,7 @@ int main()
 			std::thread threads[THREAD_TEST_THREAD_COUNT_MAX];
 			for ( int i = 0; i < threadCount; ++i )
 			{
-				threads[i] = std::thread( TestFrameAllocator, *allocationSizeArrays );
+				threads[i] = std::thread( TestFrameAllocator, *allocationSizeArrays, FRAME_TEST_ITERATIONS_PER_FRAME / threadCount );
 			}
 			for ( int i = 0; i < threadCount; ++i )
 			{
@@ -206,14 +206,14 @@ int main()
     return 0;
 }
 
-void TestFrameAllocator(unsigned char* mallocSizes)
+void TestFrameAllocator(unsigned char* mallocSizes, unsigned long long iterationsPerFrame)
 {
 	unsigned int mallocSizesIterator = 0;
 	InitializeFrameAllocator( 32ULL * MEBI, 16ULL );
 
 	for ( unsigned int i = 0; i < FRAME_TEST_FRAME_COUNT; ++i )
 	{
-		for ( unsigned int j = 0; j < FRAME_TEST_ITERATIONS_PER_FRAME; ++j )
+		for ( unsigned int j = 0; j < iterationsPerFrame; ++j )
 		{
 			Byte* memoryPointer	= static_cast<Byte*>( fMalloc( mallocSizes[mallocSizesIterator++] ) );
 			fFree( memoryPointer );
