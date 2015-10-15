@@ -226,7 +226,8 @@ void TestFrameAllocator(unsigned char* mallocSizes, unsigned long long iteration
 
 		ResetFrameAllocator();
 	}
-
+	
+	free( currentIterationAllocations );
 	ShutdownFrameAllocator();
 }
 
