@@ -210,14 +210,20 @@ void TestFrameAllocator(unsigned char* mallocSizes, unsigned long long iteration
 {
 	unsigned int mallocSizesIterator = 0;
 	InitializeFrameAllocator( 32ULL * MEBI, 16ULL );
+	Byte** currentIterationAllocations = static_cast<Byte**>( malloc( sizeof( Byte* ) * iterationsPerFrame ) );
 
 	for ( unsigned int i = 0; i < FRAME_TEST_FRAME_COUNT; ++i )
 	{
 		for ( unsigned int j = 0; j < iterationsPerFrame; ++j )
 		{
-			Byte* memoryPointer	= static_cast<Byte*>( fMalloc( mallocSizes[mallocSizesIterator++] ) );
-			fFree( memoryPointer );
+			currentIterationAllocations[j] = static_cast<Byte*>( fMalloc( mallocSizes[mallocSizesIterator++] ) );
 		}
+
+		for ( int j = 0; j < iterationsPerFrame; ++j )
+		{
+			fFree( currentIterationAllocations[j] );
+		}
+
 		ResetFrameAllocator();
 	}
 
